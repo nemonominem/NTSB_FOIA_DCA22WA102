@@ -286,3 +286,101 @@ Throughout the FOIA release, two categories of redactions are applied per the Fr
 - **b(6)** — Personal privacy: Names, phone numbers, email addresses, and other personal identifiers of government employees and private individuals
 
 The substantive findings of the FDR/CVR analysis are not redacted. The redacted content primarily covers: the specific meeting substance between NTSB and CAAC investigators, individual email addresses, and ongoing deliberative discussions about the investigation's direction.
+
+---
+
+## 8. FDR Data Analysis — Key Findings
+
+*Based on direct analysis of `DCA22WA102-220414-AllValidated-TableResolution.csv`. All times are relative to T=0 = last recorded FDR data point (when the FDR lost power). The FDR covers approximately T=−778s to T=0. See `EDA_1.html` for interactive exploration.*
+
+*A note on the Cutoff Switch parameter: the raw CSV shows CUTOFF→RUN→CUTOFF cycling every ~8 seconds throughout the entire flight. This is the ARINC 429 sentinel artifact (see `data.md §Sentinel Values`), not real switch activity. The real final transition is identified as the last RUN→CUTOFF with no subsequent return to RUN.*
+
+---
+
+### 8.1 Engine Cutoff — Timing and Sequence
+
+**Both fuel cutoff switches were moved to CUTOFF simultaneously at T=−19.375s.**
+
+This is confirmed by the last RUN→CUTAV transition for both Eng1 and Eng2 Cutoff SW parameters at exactly the same timestamp, with no subsequent return to RUN. The switches were moved in unison — no sequential or independent action between the two engines.
+
+N1 at the moment of cutoff was ~83.5% (normal cruise thrust). The decay is rapid:
+
+| Time | Eng1 N1 | Eng2 N1 | Pitch | Roll |
+|---|---|---|---|---|
+| T=−19.4s | 83.5% | 83.5% | +2.5° | +0.2° |
+| T=−16.8s | 48.3% | 52.8% | +2.3° | −3.0° |
+| T=−15.8s | 41.4% | 44.0% | +1.6° | −21.3° |
+| T=−14.8s | 36.8% | 38.8° | −0.2° | −50.8° |
+| T=−13.8s | 33.6% | 35.1% | −4.4° | −88.2° |
+| T=−12.9s | 31.5% | 32.6% | −8.8° | −123.1° |
+| T=−11.9s | 29.9% | 30.8% | −12.5° | −154.5° |
+| T=−8.8s  | 27.1% | 27.5% | −23.0° | +126.2° (past −180°) |
+| T=−0.8s  | 25.6% | 25.6% | −35.9° | −167.9° |
+
+By T=−18s N1 had already dropped to ~48%, the aircraft had begun rolling left. Roll rate was extremely rapid: from +0.2° to −154.5° in under 8 seconds (~20°/s average, peaking higher). By T=−8.8s the roll angle had passed through −180° and was reading positive again (past vertical).
+
+**The FDR stopped recording at ~26,000 ft with the aircraft in a steep nose-down (~−36° pitch), near-inverted attitude (~−168° roll).**
+
+---
+
+### 8.2 Attitude Before Cutoff — No Disturbance
+
+From T=−778s to T=−20s, pitch was a rock-steady +2.46° and roll was +0.18° to +0.35°. Altitude held at 29,095–29,112 ft. N1 held at 83.5–84.9% (normal cruise). There is no precursor turbulence, no altitude deviation, no control surface movement, and no autpilot disengagement in the FDR data prior to the cutoff event.
+
+**The aircraft was in completely normal, stable, hands-off cruise for the entire 13 minutes of recorded data up to the moment of cutoff.**
+
+---
+
+### 8.3 Crew Control Inputs — Both Pilots, Same Direction
+
+The FDR records column force independently for each seat:
+- `Ctrl Col Force Pitch CWS Local` — Captain's column (left seat)
+- `Ctrl Col Force Pitch CWS Foreign` — First Officer's column (right seat)
+- Sign convention: **negative = column pushed forward (nose down)**
+
+**Before cutoff (T=−60s to T=−20s):**
+Local (Captain) reads a steady −1.9 lb, Foreign (F/O) reads a steady +1.73 lb. These are opposite in sign but both are within the sensor's noise/bias band (~2 lb). The column position sensors (Col Pos-L and Col Pos-R) both read essentially zero (0.20°/0.04°) throughout — confirming no meaningful physical column displacement. **These readings represent sensor bias, not intentional pilot inputs.**
+
+**After cutoff (T=−17.5s onward):**
+Both channels go strongly negative together. They do not diverge — they converge.
+
+| Time | Local (Capt) | Foreign (F/O) | Sum | Col Pos-L |
+|---|---|---|---|---|
+| T=−17.6s | −16.6 lb | −9.2 lb | −25.8 lb | −0.29° |
+| T=−15.4s | −36.3 lb | −24.0 lb | −60.3 lb | −2.17° |
+| T=−12.1s | −42.6 lb | −19.6 lb | −62.2 lb | −2.80° |
+| T=−8.1s  | −65.3 lb | −44.3 lb | −109.6 lb | −5.73° |
+| T=−7.8s  | −75.8 lb | −54.5 lb | −130.3 lb | −7.35° |
+| T=−0.6s  | −83.8 lb | −83.8 lb | −167.6 lb | −6.69° |
+
+By the final recorded sample both pilots are applying maximum forward force simultaneously (−83.8 lb = sensor saturation). **There is no evidence of any crew conflict in the control inputs.** Both pilots pushed forward throughout the event, with the Captain applying somewhat greater force than the F/O but both in the same direction.
+
+**The question of whether this represents a deliberate attempt to steepen the dive, or a panic/confusion response to an extreme unusual attitude, cannot be resolved from the FDR alone.** The attitude at this point (−36° pitch, near-inverted) makes the aerodynamic interpretation of "forward column = nose down" complex — in a near-inverted aircraft, the geometry is reversed.
+
+---
+
+### 8.4 What the FDR Does Not Show
+
+The FDR stops at ~26,000 ft, approximately **10 minutes before terrain impact**. The following are therefore not in this dataset:
+
+- The full dive trajectory and final altitude loss
+- Any crew communications or callouts (CVR only)
+- Whether any recovery attempt was made after T=0
+- The final aircraft attitude and speed at impact
+- Any GPWS/EGPWS warnings
+- Any further engine restart attempts
+
+The CVR captured all of this but was provided exclusively to the CAAC and is not part of this FOIA release.
+
+---
+
+### 8.5 Summary Table
+
+| Parameter | Observation | Significance |
+|---|---|---|
+| Cutoff switch timing | Both engines cut simultaneously at T=−19.4s | Single coordinated action, not sequential or accidental |
+| Aircraft state at cutoff | Stable cruise: +2.5° pitch, +0.2° roll, 29,100 ft, N1=83.5% | No precursor event; normal flight up to the moment of cutoff |
+| Roll onset | Roll began within ~2s of cutoff, reached −90° by T=−15s | Faster than aerodynamic yaw asymmetry alone could explain |
+| Crew inputs (pitch) | Both columns pushed forward, same direction, increasing force to sensor max | No crew conflict; both pilots applying forward column together |
+| Crew inputs (timing) | Forward column inputs began at T=−17.5s, ~2s after cutoff | Crew response was immediate |
+| FDR end state | −35.9° pitch, −167.9° roll, ~26,000 ft, N1~25.6% (windmilling) | Near-inverted, steep dive, engines not producing thrust |

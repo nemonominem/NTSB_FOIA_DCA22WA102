@@ -41,9 +41,8 @@ The U.S. National Transportation Safety Board (NTSB) participated in the investi
 
 ## References
 
-- [NTSB Accident Brief — DCA22WA102](https://www.ntsb.gov/investigations/Pages/DCA22WA102.aspx)
+- [Wall Street Journal article about the FOIA request — archived (3 May 2026)](https://archive.ph/ysqJH#selection-1823.0-1823.271)
 - [China Eastern Airlines Flight MU5735 — Wikipedia](https://en.wikipedia.org/wiki/China_Eastern_Airlines_Flight_5735)
-- NTSB FOIA Request Portal: https://www.ntsb.gov/foia/
 
 ### Downloading the Original FOIA Files
 
@@ -52,7 +51,7 @@ The FOIA release documents can be downloaded directly from the NTSB Reading Room
 > **URL**: https://securefoia.ntsb.gov/app/ReadingRoom.aspx  
 > **Search**: enter `*DCA22WA102*` in the **Folder Name** field
 
-> ⚠️ **Note**: Access may require a US IP address (a US-based VPN may be needed from outside the United States).
+> **Note**: Access may require a US IP address (a US-based VPN may be needed from outside the United States).
 
 ---
 

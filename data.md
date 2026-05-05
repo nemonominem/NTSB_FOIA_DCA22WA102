@@ -98,6 +98,56 @@ The CSV files use a multi-row header before the time-series data begins:
 - Discrete (on/off, engaged/not engaged) parameters are encoded as `0.0` / `1.0` with text labels defined in row 14
 - The `ExactSample` file is approximately 10× larger than `TableResolution` due to sparse encoding
 
+### Sentinel / Invalid-Word Values
+
+A significant fraction of numeric cells contain **recorder sentinel values** — fixed out-of-range constants that the FDR outputs when a parameter word has not updated or is otherwise unavailable. These are not real measurements and must be rejected before analysis.
+
+The sentinels correspond to saturated ARINC 429 / BCD bus words at common word widths:
+
+| Sentinel value | Word width / pattern |
+|---|---|
+| 127.0, 127.875, 127.88 | 7-bit max (`0x7F`) at various scale factors |
+| 127.5 | 7-bit max, half-step resolution |
+| 255.0 | 8-bit max (`0xFF`) |
+| 1023.0, 1023.5 | 10-bit max (`0x3FF`) |
+| 4092.0, 4095.0 | 12-bit max (`0xFFF`) |
+| 16368.0 | 14-bit near-max (fuel flow word) |
+| 65520.0, 65535.0 | 16-bit max (`0xFFFF`) |
+
+Affected columns and sentinel frequency:
+
+| Parameter | Sentinel | Affected samples |
+|---|---|---|
+| Eng1 N1 | 127.88 | 175 / 775 (22%) |
+| Eng2 N1 | 127.88 | 98 / 775 (13%) |
+| Eng1 N1 Cmd | 127.875 | 175 / 775 (22%) |
+| Eng2 N1 Cmd | 127.875 | 98 / 775 (13%) |
+| Eng1 N1 Tach | 127.875 | 80 / 195 (41%) |
+| Eng2 N1 Tach | 127.875 | 98 / 195 (50%) |
+| Eng1 N2 Actual | 127.875 | 114 / 775 (15%) |
+| Eng2 N2 Actual | 127.875 | 98 / 774 (13%) |
+| Eng1 FMC N1 Target | 127.0 | 175 / 775 (22%) |
+| Eng2 FMC N1 Target | 127.0 | 98 / 775 (13%) |
+| Eng1 FMC N1 Bug Drive | 127.0 | 80 / 389 (21%) |
+| Eng2 FMC N1 Bug Drive | 127.0 | 95 / 386 (25%) |
+| APU N1 | 127.5 | 98 / 195 (50%) |
+| Eng1 EGT | 1023.0 | 175 / 775 (22%) |
+| Eng2 EGT | 1023.0 | 114 / 775 (15%) |
+| Eng1 Oil Press | 1023.0 | 95 / 192 (49%) |
+| Airspeed Max Allowable | 1023.0 | 98 / 195 (50%) |
+| Ground Spd | 1023.5 | 579 / 3100 (19%) |
+| Groundspeed Disp -L | 1023.5 | 192 / 775 (25%) |
+| Hyd Oil Press - A | 4092.0 | 175 / 775 (22%) |
+| Hyd Oil Press - B | 4092.0 | 114 / 775 (15%) |
+| Eng1 Fuel Flow | 16368.0 | 175 / 775 (22%) |
+| Eng2 Fuel Flow | 16368.0 | 98 / 775 (13%) |
+| FMC Selected Altitude | 65520.0 | 175 / 775 (22%) |
+| Selected Altitude FCC | 65520.0 | 98 / 775 (13%) |
+
+The sentinels appear on a fixed cadence (typically every 8 seconds) matching the FDR frame structure, confirming they are a recorder artifact rather than physically real excursions. For example, Eng1 N1 alternates between the real ~84% cruise value and the 127.88 sentinel every 8 seconds with no intermediate transitions.
+
+**Handling**: reject any value in the sentinel set before computing statistics, plotting, or fitting. Do not forward-fill through them — treat them as missing. The `EDA_1_fixed.html` explorer applies this filter automatically via its `toNum()` function.
+
 ---
 
 ## `.upk` File Details
