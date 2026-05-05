@@ -2,7 +2,7 @@
 
 The CSV files (`DCA22WA102-220414-AllValidated-ExactSample.csv` and `DCA22WA102-220414-AllValidated-TableResolution.csv`) contain approximately **160 FDR parameters** across the following categories.
 
-For CSV header structure and data notes, see [`README.md`](README.md).
+For CSV header structure and data notes, see [`data.md`](data.md).
 
 ---
 
@@ -88,6 +88,6 @@ Key parameters noted during NTSB analysis as significant:
 | `Eng1 N2 Actual` / `Eng2 N2 Actual` | N2 drop below generator cutoff speed → loss of AC generation |
 | `Pitch Angle` | Rapid pitch-down from cruise to −80° |
 | `Roll Angle` | Extreme roll approaching ±90° |
-| `Altitude Press` | Rapid descent from ~29,000 ft to impact |
+| `Altitude Press` | Rapid descent from ~29,000 ft — FDR records down to ~26,000 ft before power loss (does not capture impact) |
 | `Ctrl Col Force Pitch CWS Local` / `Foreign` | Control inputs (or absence thereof) during upset |
 | `Ctrl Whl Force Roll CWS` | Roll inputs during upset |
