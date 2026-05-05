@@ -46,6 +46,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <strong>FDR only — recording ends ~10 min before impact.</strong>
     Both engine fuel cutoff switches were moved to CUTOFF at ~T−18 s (relative to end of recording). As the engines wound down, AC generators went offline and the FDR lost power. The aircraft continued in an uncontrolled dive for ~10 more minutes before terrain impact. CVR captured the full sequence but is not in this release.
   </p>
+  <p style="margin-top:6px;padding:7px 12px;background:#e8f4fd;border-left:3px solid #2196f3;border-radius:4px;font-size:0.8rem;color:#1a3a4a;max-width:900px">
+    <strong>Lines are forward-filled between real sample points.</strong>
+    Parameters are recorded at their native FDR rate (16 Hz down to 0.25 Hz depending on the parameter — see <a href="observables.md" style="color:#1565c0">observables.md</a>) and resampled to a 16 Hz grid by step-holding the last known value. A flat line between two points means <em>no new data was received</em>, not that the value was constant. Enable point markers (checkbox below) to see where actual samples occur.
+  </p>
 </div>
 
 <div class="layout">
@@ -60,8 +64,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pAccel()">Acceleration (g-loads)</button>
     <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pDualInput()">Dual Input (Capt vs F/O)</button>
     <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pControls()">Flight Controls</button>
-    <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pAutopilot()">Autopilot / FCC</button>
-    <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pElec()">Electrical &amp; Generators</button>
     <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pHyd()">Hydraulics</button>
     <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pAirData()">Air Data (Speed/Mach)</button>
   </div>
@@ -88,6 +90,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <input type="checkbox" id="chkSentinel" checked onchange="onSentinelToggle()">
       Filter invalid words (sentinels)
     </label>
+    <label class="sentinel-toggle" title="Show a dot at each real FDR sample point. Gaps between dots are forward-filled (no new data).">
+      <input type="checkbox" id="chkPoints" onchange="onPointsToggle()">
+      Show sample points
+    </label>
     <span id="info"></span>
   </div>
   <div class="chart-wrap"><canvas id="ch1"></canvas></div>
@@ -112,7 +118,13 @@ let TX = [];
 let filterSentinels = true;
 function onSentinelToggle() {
   filterSentinels = document.getElementById('chkSentinel').checked;
-  draw1();
+  draw1(defaultXMin);
+}
+
+let showPoints = false;
+function onPointsToggle() {
+  showPoints = document.getElementById('chkPoints').checked;
+  draw1(defaultXMin);
 }
 
 // ── File input (load different CSV) ──────────────────────────────────────
@@ -164,6 +176,7 @@ function loaded(rows) {
   document.getElementById('info').textContent = 'T=0 is FDR cutoff · recording spans ' + TX[0].toFixed(1) + 's to 0s (' + Math.abs(TX[0]).toFixed(0) + 's total)';
 
   buildColSentinels();
+  buildSampleRates();
   buildUI();
   pEngine();
 }
@@ -225,6 +238,22 @@ function buildColSentinels() {
       if (c >= 8 && Math.abs(v - med) / stdev > 3) bad.add(v);
     }
     if (bad.size) COL_SENTINELS[col] = bad;
+  }
+}
+
+// ── Sample rate per column (computed at load time) ───────────────────────
+// SAMPLE_HZ[i] = native FDR sample rate for column i (Hz)
+let SAMPLE_HZ = [];
+function buildSampleRates() {
+  SAMPLE_HZ = new Array(PN.length).fill(0);
+  let span = TX[TX.length-1] - TX[0]; // total seconds (negative, so use abs)
+  span = Math.abs(span);
+  for (let col = 1; col < PN.length; col++) {
+    let count = 0;
+    for (let row of D) {
+      if (col < row.length && row[col] !== null && row[col] !== undefined && String(row[col]).trim() !== '') count++;
+    }
+    SAMPLE_HZ[col] = count / span;
   }
 }
 
@@ -340,8 +369,6 @@ function pAttRates()  { clr(); setTitle('Attitude Rates');               selectP
 function pAccel()     { clr(); setTitle('Acceleration (g-loads)');       selectParams(['Accel Vert','Accel Long','Accel Lat']); draw1(); }
 function pDualInput() { clr(); setTitle('Dual Input — Captain vs F/O  (column force lb, negative = nose-down)'); selectParams(['Ctrl Col Force Pitch CWS Local','Ctrl Col Force Pitch CWS Foreign','Ctrl Col Force Pitch CWS']); draw1(); }
 function pControls()  { clr(); setTitle('Flight Controls');              selectParams(['Ctrl Col Force Pitch CWS Local','Ctrl Col Force Pitch CWS Foreign','Aileron Roll Cmd-L','Ctrl Whl Force Roll CWS','Elevator Pitch Cmd-L']); draw1(); }
-function pAutopilot() { clr(); setTitle('Autopilot / FCC');              selectParams(['CMD A - FCC','AP Off - FCC','TOGA Engaged - FCC','Single Channel - FCC','FAC Engage - FCC','AT FMC SPD Engaged','ALT ACQ Engaged - FCC']); draw1(TX[0]); }
-function pElec()      { clr(); setTitle('Electrical & Generators');      selectParams(['28 VDC BAT BUS SECT 2','28 VDC STDBY BUS SECT 2','APU On','APU Ready To Load','APU N1']); draw1(TX[0]); }
 function pHyd()       { clr(); setTitle('Hydraulics');                   selectParams(['Hyd Oil Press - A','Hyd Oil Press - B','Hyd Oil Qty - A','Hyd Oil Qty - B','Hydraulic System A Eng 1','Hydraulic System B Eng 2']); draw1(); }
 function pAirData()   { clr(); setTitle('Air Data (Speed/Mach)');        selectParams(['Airspeed Comp','Airspeed Max Allowable','Ground Spd','Groundspeed  FMC','Selected Mach FCC']); draw1(); }
 
@@ -353,13 +380,30 @@ function makeDatasets(indices) {
     let nm = PN[idx]||('p'+idx);
     let u  = (PU[idx] && PU[idx]!=='') ? ' ['+PU[idx]+']' : '';
     let vals = getVals(idx, true);
+    // Point radius: show dot only at real sample positions, size proportional to rarity
+    let hz = SAMPLE_HZ[idx] || 1;
+    let ptRadius = 0;
+    let ptHitRadius = 4;
+    if (showPoints) {
+      // Larger dots for slower-sampled params so they're visible
+      ptRadius = hz >= 8 ? 1.5 : hz >= 2 ? 2.5 : 3.5;
+    }
+    // Build per-point radius array: non-zero only at real sample positions
+    let ptRadiusArr = null;
+    if (showPoints) {
+      ptRadiusArr = D.map((row, i) => {
+        let raw = (idx < row.length) ? row[idx] : '';
+        return (raw !== null && raw !== undefined && String(raw).trim() !== '') ? ptRadius : 0;
+      });
+    }
     return {
       label: nm + u,
       data: TX.map((t,i) => ({ x: t, y: vals[i] })),
       borderColor: COLS[k % COLS.length],
-      backgroundColor: 'transparent',
+      backgroundColor: COLS[k % COLS.length],
       borderWidth: 1.5,
-      pointRadius: 0,
+      pointRadius: ptRadiusArr || 0,
+      pointHitRadius: ptHitRadius,
       tension: 0,
       spanGaps: true,
       stepped: ENC_MAP[idx] ? 'before' : false

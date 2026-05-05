@@ -292,7 +292,7 @@ The `DCA22WA102-Final12minutes.upk` and the CSV files therefore cover the **fina
 The `.upk` format is proprietary to NTSB/CIDER software. Options for reading them:
 
 1. **NTSB CIDER software** — Not publicly available; requires NTSB/investigation access
-2. **Reverse engineering** — The binary structure could potentially be decoded given the known parameter list (see [`parameters.md`](parameters.md)) and the ARINC 717 data stream structure
+2. **Reverse engineering** — The binary structure could potentially be decoded given the known parameter list (see [`observables.md`](observables.md)) and the ARINC 717 data stream structure
 3. **Cross-reference with CSV** — The CSV files (`DCA22WA102-220414-AllValidated-*`) were exported from these same UPK/CIDER files and are fully readable; for most analytical purposes the CSVs are sufficient
 
 ---

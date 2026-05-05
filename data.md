@@ -65,7 +65,7 @@ Both CSV files were created on **April 14, 2022** (file version `007-ParameterVa
 - **Rows**: ~198,035 (excluding headers)
 - **Format**: Each parameter is recorded at its **exact native sample rate** from the FDR, resulting in sparse rows (most cells empty at any given timestamp)
 - **Time Range**: ~288,200 – 288,977 seconds (~777 seconds / ~13 minutes of flight data)
-- **Parameters**: ~160 FDR parameters (see [`parameters.md`](parameters.md))
+- **Parameters**: ~160 FDR parameters (see [`observables.md`](observables.md))
 
 ### `DCA22WA102-220414-AllValidated-TableResolution.csv`
 - **Size**: ~3.4 MB
@@ -160,4 +160,4 @@ See [`analysis.md §6`](analysis.md#6-the-upk-files--ntsb-unpacked-fdr-data) for
 
 ## FDR Parameter List
 
-See [`parameters.md`](parameters.md) for the full categorised parameter list (~160 parameters) and a key parameter significance table.
+See [`observables.md`](observables.md) for the full parameter reference: physical definitions, sample rates, units, discrete vs. continuous classification, and analysis notes.
