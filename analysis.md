@@ -136,7 +136,26 @@ The CAAC opened the CSMU at their facilities in Beijing, removed protective RTV 
 
 A non-linear time drift between the CAM (wideband, 16 kHz) and crew channels (narrowband, 8 kHz) was identified and corrected. Minor packet dropout artefacts were present in the narrowband channels, possibly related to the pre-existing (manufacturing defect) capacitor damage.
 
-> **Important**: The NTSB **did not retain any CVR audio files**. All raw downloads, wav files, and processed audio were provided exclusively to the CAAC delegation.
+<div style="background:#fff3cd;border-left:4px solid #e6a817;border-radius:4px;padding:12px 16px;margin:12px 0">
+
+> ⚠️ **NTSB claims it retained no copy of the CVR audio — a claim that is technically implausible given the recovery workflow.**
+>
+> The NTSB's own report states it *"did not retain any of the files provided to the CAAC delegation other than the photographs, scans, and microscopic images."* This has been separately confirmed in press reporting (CNN, May 2026): US investigators extracted all four channels at Excellent quality and provided the audio to CAAC, stating they kept no copy of the audio files.
+>
+> **Why this claim strains credibility:**
+> The CVR recovery involved a multi-step forensic process that inherently requires intermediate digital copies:
+> 1. Raw chip-off binary read from the CSMU flash memory chips → must be written to a working file before any processing
+> 2. Frame sync and decoding of the CSMU binary format → requires a decoded intermediate file
+> 3. Separate processing of CAM (16 kHz wideband) and crew channels (8 kHz narrowband) → separate decoded audio streams
+> 4. Non-linear time drift correction between CAM and crew channels → requires read/write of corrected audio
+> 5. Quality verification playback → requires a locally readable audio file
+> 6. Final export of WAV files for delivery to CAAC
+>
+> Each of these steps produces at least one intermediate file on NTSB equipment. A forensic audio extraction of this complexity, conducted over multiple days at the NTSB lab, does not produce a single output file with no traces. The assertion that zero copies were retained — not even a working backup, a QC copy, or a verification file — is technically extraordinary.
+>
+> Whether this reflects a deliberate policy decision, a legal interpretation of ICAO Annex 13 obligations, or an incomplete description of what was retained, the practical effect is the same: **the only recorder that captured the full final sequence of MU5735 is now held exclusively by the government of China, with no independently verifiable copy.**
+
+</div>
 
 ---
 
@@ -299,6 +318,8 @@ The substantive findings of the FDR/CVR analysis are not redacted. The redacted 
 
 ### 8.1 Engine Cutoff — Timing and Sequence
 
+![FIG 1 — Engine Cutoff: N1, N2, Fuel Cutoff Switches](support/figures/fig1_engine_cutoff.png)
+
 **Both fuel cutoff switches were moved to CUTOFF simultaneously at T=−19.375s.**
 
 This is confirmed by the last RUN→CUTAV transition for both Eng1 and Eng2 Cutoff SW parameters at exactly the same timestamp, with no subsequent return to RUN. The switches were moved in unison — no sequential or independent action between the two engines.
@@ -325,6 +346,8 @@ By T=−18s N1 had already dropped to ~48%, the aircraft had begun rolling left.
 
 ### 8.2 Attitude Before Cutoff — No Disturbance
 
+![FIG 2 — Pre-cutoff Stability: Altitude, Pitch, Roll (full 13-min recording)](support/figures/fig2_precursor_stability.png)
+
 From T=−778s to T=−20s, pitch was a rock-steady +2.46° and roll was +0.18° to +0.35°. Altitude held at 29,095–29,112 ft. N1 held at 83.5–84.9% (normal cruise). There is no precursor turbulence, no altitude deviation, no control surface movement, and no autpilot disengagement in the FDR data prior to the cutoff event.
 
 **The aircraft was in completely normal, stable, hands-off cruise for the entire 13 minutes of recorded data up to the moment of cutoff.**
@@ -332,6 +355,8 @@ From T=−778s to T=−20s, pitch was a rock-steady +2.46° and roll was +0.18°
 ---
 
 ### 8.3 Crew Control Inputs — Both Pilots, Same Direction
+
+![FIG 3 — Column Force and Position: Captain vs F/O (last 60 s)](support/figures/fig3_dual_input.png)
 
 The FDR records column force independently for each seat:
 - `Ctrl Col Force Pitch CWS Local` — Captain's column (left seat)
@@ -356,6 +381,18 @@ Both channels go strongly negative together. They do not diverge — they conver
 By the final recorded sample both pilots are applying maximum forward force simultaneously (−83.8 lb = sensor saturation). **There is no evidence of any crew conflict in the control inputs.** Both pilots pushed forward throughout the event, with the Captain applying somewhat greater force than the F/O but both in the same direction.
 
 **The question of whether this represents a deliberate attempt to steepen the dive, or a panic/confusion response to an extreme unusual attitude, cannot be resolved from the FDR alone.** The attitude at this point (−36° pitch, near-inverted) makes the aerodynamic interpretation of "forward column = nose down" complex — in a near-inverted aircraft, the geometry is reversed.
+
+---
+
+### 8.3.1 Dive Kinematics and Command Confirmation
+
+The following two figures show the post-cutoff trajectory and the command chain linking column input to elevator deflection to pitch response.
+
+![FIG 4 — Post-Cutoff Dive: Pitch, Roll, Altitude (last 40 s)](support/figures/fig4_dive_attitude.png)
+
+![FIG 5 — Nose-Down Command Chain: Column Force → Elevator → Pitch (last 40 s)](support/figures/fig5_nose_down_command.png)
+
+The roll angle discontinuity in FIG 4 at approximately T=−11s is a ±180° wrap artifact — the aircraft had rolled past inverted, not a data error. The elevator deflection in FIG 5 tracks column input directly, with pitch angle responding continuously nose-down from T=−17s onward.
 
 ---
 

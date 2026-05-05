@@ -49,6 +49,8 @@ The FDR data in this repository therefore covers only the period from cruise thr
 > **CVR audio** (cockpit voice recordings): recovered at Excellent quality on all 4 channels by NTSB, but provided exclusively to CAAC. **Not included in this FOIA release and not accessible to the public.** The CVR is the only recorder that captured the full final dive and impact.
 
 > **For data analysis**, start with `DCA22WA102-220414-AllValidated-TableResolution.csv` — it is the most accessible, well-formatted file and is directly usable with pandas, Excel, or any standard data tool.
+>
+> **Interactive browser**: [EDA_1.html](https://nemonominem.github.io/NTSB_FOIA_DCA22WA102/EDA_1.html) — self-contained FDR explorer with the full CSV embedded. No setup required.
 
 ---
 
