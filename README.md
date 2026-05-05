@@ -3,7 +3,7 @@
 
 This repository contains Flight Data Recorder (FDR) readout data and Freedom of Information Act (FOIA) release documents from the NTSB investigation of **DCA22WA102**: the controlled-flight-into-terrain (CFIT) of China Eastern Airlines Flight MU5735.
 
-> **About this repository**: Prepared by **Gilles Demaneuf** with initial analysis assisted by **Claude Sonnet 4.5**. Files are presented largely as-is from the NTSB FOIA release.
+> **About this repository**: Prepared by **Gilles Demaneuf** with initial analysis, assisted by **Claude Sonnet 4.6** (paying), and **DeepSeek V4 Flash** (free), in VSCode via Cline. Files are presented largely as-is from the NTSB FOIA release.
 >
 > **Fork welcome** — anyone is welcome to fork, analyse the FDR data, and share findings. Start with [`data.md`](data.md) for orientation.
 
