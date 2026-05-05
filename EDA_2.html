@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MU5735 FDR Explorer</title>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.2/papaparse.min.js"></script>
+<script src="https://cdn.plotly.com/plotly-3.0.1.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f7;color:#1d1d1f;padding:16px}
+h1{font-size:1.4rem}
+.sub{color:#6e6e73;font-size:0.85rem;margin-bottom:14px}
+.layout{display:grid;grid-template-columns:250px 1fr;gap:16px;max-width:1500px;margin:0 auto}
+.sidebar{background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.08);position:sticky;top:14px;max-height:90vh;overflow-y:auto;font-size:0.8rem}
+.sidebar h3{font-size:0.72rem;text-transform:uppercase;color:#6e6e73;margin:10px 0 4px}
+#s{font-size:0.78rem;padding:6px 10px;border-radius:6px;margin-bottom:8px}
+#s.w{background:#fff3e0;color:#e65100}
+#s.o{background:#e8f5e9;color:#2e7d32}
+.lb{width:100%;padding:8px;background:#007aff;color:#fff;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;margin-bottom:8px}
+.lb:hover{background:#0066d6}
+.qb{display:block;width:100%;text-align:left;padding:5px 8px;border:none;border-radius:5px;font-size:0.78rem;cursor:pointer;margin-bottom:3px;background:#f5f5f7;color:#1d1d1f}
+.qb:hover{background:#e8e8ed}
+.gb{display:block;width:100%;text-align:left;padding:4px 8px;border:none;background:transparent;font-size:0.75rem;cursor:pointer;border-radius:4px;color:#1d1d1f}
+.gb:hover{background:#f0f0f2}
+.gb::before{content:"\25B8 "}
+.gb.o::before{content:"\25BE "}
+.pl{display:none;margin:2px 0 2px 10px}
+.pl.o{display:block}
+.pi{padding:2px 6px;font-size:0.72rem;cursor:pointer;border-radius:3px;color:#515154}
+.pi:hover{background:#e8e8ed}
+.pi.s{background:#007aff;color:#fff}
+.main{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.08);min-height:500px}
+.cw{width:100%;height:450px}
+.tb{display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
+.tb button{padding:5px 12px;border:none;border-radius:5px;font-size:0.78rem;cursor:pointer}
+.tb2{background:#e8e8ed;color:#1d1d1f}
+#i{font-size:0.78rem;color:#6e6e73;margin-left:auto}
+#ld{display:flex;align-items:center;justify-content:center;min-height:400px;color:#6e6e73;text-align:center}
+#ap{display:none}
+@media(max-width:768px){.layout{grid-template-columns:1fr}.sidebar{position:static;max-height:none}}
+</style>
+</head>
+<body>
+
+<div class="layout">
+<div class="sidebar">
+<div id="s" class="w">Load CSV</div>
+<button class="lb" onclick="document.getElementById('f').click()">Load CSV File</button>
+<input type="file" id="f" accept=".csv" style="display:none">
+<h3>Quick Views</h3>
+<button class="qb" onclick="qv('e')">Engine &amp; Cutoff</button>
+<button class="qb" onclick="qv('f')">Flight Path</button>
+<button class="qb" onclick="qv('c')">Controls</button>
+<button class="qb" onclick="qv('x')">Electrical</button>
+<h3>Parameters</h3>
+<div id="pg"></div>
+</div>
+
+<div class="main">
+<div id="ld"><div><div style="font-size:1.2rem;margin-bottom:6px">Load CSV</div><div style="font-size:0.85rem">Select <b>DCA22WA102-220414-AllValidated-TableResolution.csv</b></div></div></div>
+<div id="ap">
+<div class="tb">
+<button class="tb2" onclick="ex()">Export PNG</button>
+<span id="i"></span>
+</div>
+<div class="cw"><div id="plot"></div></div>
+</div>
+</div>
+</div>
+
+<script>
+var rows=[], names=[], units=[], times=[];
+var sel=[];
+
+document.getElementById('f').addEventListener('change',function(e){
+  var f=e.target.files[0];if(!f)return;
+  st('Parsing...');
+  Papa.parse(f,{header:false,dynamicTyping:true,skipEmptyLines:true,
+    complete:function(r){load(r.data);},
+    error:function(){st('Error');}
+  });
+});
+
+function st(t){var s=document.getElementById('s');s.textContent=t;s.className='w';}
+function ok(t){var s=document.getElementById('s');s.textContent=t;s.className='o';}
+
+function load(data){
+  var dr=-1;
+  for(var i=0;i<data.length;i++){if(data[i][0]==='DATA'){dr=i;break;}}
+  if(dr<0){alert('No DATA row');return;}
+  names=data[dr+1].map(function(s){return String(s).trim();});
+  units=data[dr+2]?data[dr+2].map(function(s){return String(s).trim();}):[];
+  rows=[];times=[];
+  for(var i=dr+4;i<data.length;i++){
+    if(data[i]&&data[i].length>1&&data[i][0]!==null&&data[i][0]!==''){
+      rows.push(data[i]);times.push(data[i][0]);
+    }
+  }
+  document.getElementById('ld').style.display='none';
+  document.getElementById('ap').style.display='block';
+  ok(rows.length.toLocaleString()+' rows');
+  document.getElementById('i').textContent='Time: '+times[0]+' — '+times[times.length-1]+' sec';
+  buildUI();
+  qv('e');
+}
+
+function buildUI(){
+  var gp={'Engine':['N1','N2','EGT','TRA','Fuel','Cutoff','Fire','Oil','FMV'],
+    'Alt/Speed':['Alt','Airspeed','Mach','Speed','Baro'],
+    Attitude:['Pitch','Roll','Yaw','Drift','Track'],
+    Accel:['Accel','Lateral','Longitudinal','Vertical'],
+    Controls:['Aileron','Elevator','Rudder','Flap','Column','Wheel','Ctrl Col','Ctrl Whl'],
+    'AP/FCC':['CMD','AP ','FCC','FD','TOGA','MACH Trim'],
+    Electrical:['VAC','VDC','Bus','Battery','APU'],
+    Nav:['FMC','Heading','Wind','Course'],
+    Other:[]};
+  var gd={};for(var g in gp)gd[g]=[];
+  for(var i=1;i<names.length;i++){
+    var nm=names[i],ok=false;
+    for(var g in gp){for(var j=0;j<gp[g].length;j++){if(nm.toLowerCase().indexOf(gp[g][j].toLowerCase())>=0){gd[g].push(i);ok=true;break;}}if(ok)break;}
+    if(!ok)gd['Other'].push(i);
+  }
+  var box=document.getElementById('pg');box.innerHTML='';
+  for(var g in gd){
+    if(!gd[g].length)continue;
+    var d=document.createElement('div');
+    var b=document.createElement('button');b.className='gb';
+    b.textContent=g+' ('+gd[g].length+')';
+    b.onclick=function(){var l=this.nextSibling;l.classList.toggle('o');this.classList.toggle('o');};
+    d.appendChild(b);
+    var l=document.createElement('div');l.className='pl';
+    for(var k=0;k<gd[g].length;k++){
+      var idx=gd[g][k];
+      var it=document.createElement('div');it.className='pi';
+      var u=(units[idx]&&units[idx]!=='')?' ['+units[idx]+']':'';
+      it.textContent=names[idx]+u;it.dataset.idx=idx;
+      it.onclick=function(){
+        var id=parseInt(this.dataset.idx);
+        var p=sel.indexOf(id);
+        if(p>=0){sel.splice(p,1);this.classList.remove('s');}
+        else{sel.push(id);this.classList.add('s');}
+        draw();
+      };
+      l.appendChild(it);
+    }
+    d.appendChild(l);box.appendChild(d);
+  }
+}
+
+function fi(n){
+  for(var i=1;i<names.length;i++){if(names[i].trim()===n)return i;}
+  for(var i=1;i<names.length;i++){if(names[i].toLowerCase().indexOf(n.toLowerCase())>=0)return i;}
+  return -1;
+}
+
+function clr(){var els=document.querySelectorAll('.pi.s');for(var i=0;i<els.length;i++)els[i].classList.remove('s');sel=[];}
+
+function qv(v){
+  clr();
+  var t=[];
+  if(v==='e')t=['Eng1 Cutoff SW','Eng2 Cutoff SW','Eng1 N1 Actual','Eng2 N1 Actual','Eng1 N2 Actual','Eng2 N2 Actual'];
+  else if(v==='f')t=['Altitude Press','Airspeed Comp','Pitch Angle','Roll Angle'];
+  else if(v==='c')t=['Ctrl Col Pitch CWS Local','Ctrl Col Pitch CWS Foreign','Aileron L','Aileron R','Elevator L','Elevator R','Ctrl Whl Force Roll CWS'];
+  else if(v==='x')t=['115 VAC Standby Bus','28 VDC Bus 1','28 VDC Bus 2','APU On','APU N1'];
+  for(var i=0;i<t.length;i++){var id=fi(t[i]);if(id>=0){sel.push(id);var el=document.querySelector('.pi[data-idx="'+id+'"]');if(el)el.classList.add('s');}}
+  draw();
+}
+
+function draw(){
+  if(!sel.length)return;
+  var traces=[];
+  var colors=['#007aff','#ff9500','#34c759','#ff3b30','#af52de','#ff2d55','#5856d6','#00c7be'];
+  for(var k=0;k<sel.length;k++){
+    var idx=sel[k];
+    var nm=names[idx]||'p'+idx;
+    var u=(units[idx]&&units[idx]!=='')?' ['+units[idx]+']':'';
+    var vals=[];
+    for(var r=0;r<rows.length;r++){
+      var v=rows[r][idx];
+      vals.push((v===null||v===undefined||v==='')?null:Number(v));
+    }
+    traces.push({
+      x:times,y:vals,
+      type:'scatter',mode:'lines',
+      name:nm+u,
+      line:{color:colors[k%colors.length],width:1.5},
+      connectgaps:false
+    });
+  }
+  var layout={
+    xaxis:{title:'Time (seconds)',zeroline:false},
+    yaxis:{title:'Value',zeroline:false},
+    margin:{l:50,r:20,t:30,b:40},
+    legend:{x:1,y:1},
+    hovermode:'x unified'
+  };
+  var config={responsive:true,displayModeBar:true,modeBarButtonsToRemove:['lasso2d','select2d']};
+  Plotly.newPlot('plot',traces,layout,config);
+}
+
+function ex(){
+  Plotly.downloadImage('plot',{format:'png',width:1200,height:600,filename:'mu5735'});
+}
+</script>
+</body>
+</html>

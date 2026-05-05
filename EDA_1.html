@@ -1,0 +1,297 @@
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MU5735 FDR Data Explorer — NTSB DCA22WA102</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f7;color:#1d1d1f;padding:20px}
+.header{max-width:1400px;margin:0 auto 20px}
+.header h1{font-size:1.5rem;font-weight:600;margin-bottom:4px}
+.header p{color:#6e6e73;font-size:0.9rem}
+.layout{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:280px 1fr;gap:20px}
+.sidebar{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.08);height:fit-content;position:sticky;top:20px}
+.sidebar h2{font-size:0.85rem;font-weight:600;margin-bottom:10px;color:#6e6e73;text-transform:uppercase;letter-spacing:.5px}
+#loadStatus{padding:8px 12px;border-radius:8px;font-size:0.85rem;margin-bottom:12px}
+#loadStatus.loading{background:#fff3e0;color:#e65100}
+#loadStatus.ready{background:#e8f5e9;color:#2e7d32}
+#loadStatus.error{background:#ffebee;color:#c62828}
+.param-group{margin-bottom:6px}
+.param-group-btn{width:100%;text-align:left;padding:6px 10px;background:#f5f5f7;border:none;border-radius:6px;font-size:0.8rem;font-weight:500;cursor:pointer;color:#1d1d1f}
+.param-group-btn:hover{background:#e8e8ed}
+.param-list{display:none;margin-top:3px}
+.param-list.open{display:block}
+.param-item{padding:3px 10px;font-size:0.75rem;cursor:pointer;border-radius:4px;color:#515154}
+.param-item:hover{background:#e8e8ed;color:#1d1d1f}
+.param-item.sel{background:#007aff;color:#fff}
+.main-area{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08);min-height:500px}
+.chart-wrap{position:relative;width:100%;height:450px;margin-bottom:20px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.controls button{padding:6px 14px;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer}
+.btn-pri{background:#007aff;color:#fff}
+.btn-sec{background:#e8e8ed;color:#1d1d1f}
+#info{font-size:0.85rem;color:#6e6e73;font-family:monospace;margin-left:auto}
+.landing{display:flex;align-items:center;justify-content:center;min-height:400px;color:#6e6e73;text-align:center}
+@media(max-width:768px){.layout{grid-template-columns:1fr}.sidebar{position:static}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>MU5735 FDR Data Explorer</h1>
+  <p>NTSB DCA22WA102 &middot; <code>DCA22WA102-220414-AllValidated-TableResolution.csv</code> &middot; <a href="data.md">About the data</a></p>
+</div>
+
+<div class="layout">
+
+<div class="sidebar">
+  <div id="loadStatus" class="loading">Load a CSV to begin</div>
+  <h2>Parameters</h2>
+  <div id="paramGroups"><p style="font-size:0.8rem;color:#9e9ea0">Load CSV first</p></div>
+  <hr style="margin:12px 0;border:none;border-top:1px solid #e8e8ed">
+  <h2>Quick Views</h2>
+  <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+    <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pEngine()">Engine &amp; Fuel Cutoff</button>
+    <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pFlight()">Flight Path</button>
+    <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pControls()">Flight Controls</button>
+    <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pElec()">Electrical</button>
+  </div>
+  <div style="margin-top:12px">
+    <button class="btn-pri" style="width:100%;font-size:0.85rem;padding:8px" onclick="document.getElementById('csvIn').click()">Load CSV</button>
+    <input type="file" id="csvIn" accept=".csv" style="display:none">
+  </div>
+</div>
+
+<div class="main-area">
+
+<div id="landing" class="landing">
+  <div>
+    <div style="font-size:1.2rem;margin-bottom:8px">Load the FDR CSV file to begin</div>
+    <div style="font-size:0.85rem;color:#9e9ea0">Click <strong>Load CSV</strong> in the sidebar and select<br><code>DCA22WA102-220414-AllValidated-TableResolution.csv</code></div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div class="controls">
+    <button class="btn-pri" onclick="resetZoom()">Reset Zoom</button>
+    <button class="btn-sec" onclick="expPNG()">Export PNG</button>
+    <span id="info"></span>
+  </div>
+  <div class="chart-wrap"><canvas id="ch1"></canvas></div>
+  <div id="y2section">
+    <div class="controls">
+      <span style="font-size:0.85rem;font-weight:500">Secondary Y-axis:</span>
+      <select id="y2sel" multiple style="font-size:0.75rem;width:300px;height:50px"></select>
+    </div>
+    <div class="chart-wrap"><canvas id="ch2"></canvas></div>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script>
+<script>
+// Register zoom plugin for Chart.js v4
+Chart.register(ChartZoom);
+
+let D = [], PN = [], PU = [], enc = [];
+let sel = [], sel2 = [];
+let c1 = null, c2 = null;
+
+document.getElementById('csvIn').addEventListener('change', function(e) {
+  let f = e.target.files[0];
+  if (!f) return;
+  document.getElementById('loadStatus').textContent = 'Parsing...';
+  document.getElementById('loadStatus').className = 'loading';
+  Papa.parse(f, { header: false, dynamicTyping: true, skipEmptyLines: true,
+    complete: function(r) { loaded(r.data); },
+    error: function() { document.getElementById('loadStatus').textContent = 'Error'; document.getElementById('loadStatus').className = 'error'; }
+  });
+});
+
+function loaded(rows) {
+  // Find DATA marker
+  let dr = -1;
+  for (let i = 0; i < rows.length; i++) if (rows[i][0] === 'DATA') { dr = i; break; }
+  if (dr < 0) { alert('DATA marker not found'); return; }
+
+  PN = rows[dr+1].map(s => String(s).trim());
+  PU = rows[dr+2] ? rows[dr+2].map(s => String(s).trim()) : [];
+  enc = rows[dr+3] ? rows[dr+3].map(s => String(s).trim()) : [];
+
+  D = [];
+  for (let i = dr+4; i < rows.length; i++) {
+    if (rows[i] && rows[i].length > 1 && rows[i][0] !== null && rows[i][0] !== '') D.push(rows[i]);
+  }
+
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('loadStatus').textContent = D.length.toLocaleString()+' rows, '+PN.length+' params';
+  document.getElementById('loadStatus').className = 'ready';
+  document.getElementById('info').textContent = 'Time: '+D[0][0]+'s — '+D[D.length-1][0]+'s';
+
+  buildUI();
+  pEngine();
+}
+
+function buildUI() {
+  // Build parameter groups
+  let gnames = ['Engine','Altitude/Airspeed','Attitude','Acceleration','Flight Controls','Autopilot/FCC','Electrical','Navigation/FMC','Other'];
+  let pats = {
+    'Engine':['N1','N2','EGT','TRA','Fuel','Cutoff','Fire','Oil','FMV'],
+    'Altitude/Airspeed':['Alt','Airspeed','Mach','Speed','Baro'],
+    'Attitude':['Pitch','Roll','Yaw','Drift','Track'],
+    'Acceleration':['Accel','Lateral','Longitudinal','Vertical'],
+    'Flight Controls':['Aileron','Elevator','Rudder','Flap','Column','Wheel','Ctrl Col','Ctrl Whl'],
+    'Autopilot/FCC':['CMD','AP ','FCC','FD ','TOGA','MACH Trim','Single Ch'],
+    'Electrical':['VAC','VDC','Bus','Battery','APU'],
+    'Navigation/FMC':['FMC','Heading','Wind Dir','Wind Spd','Course','Drift Angle'],
+    'Other':[]
+  };
+  let grp = {};
+  for (let i = 1; i < PN.length; i++) {
+    let nm = PN[i], ok = false;
+    for (let [g, ps] of Object.entries(pats)) {
+      for (let p of ps) { if (nm.toLowerCase().includes(p.toLowerCase())) { if (!grp[g]) grp[g]=[]; grp[g].push(i); ok=true; break; } }
+      if (ok) break;
+    }
+    if (!ok) { if (!grp['Other']) grp['Other']=[]; grp['Other'].push(i); }
+  }
+
+  let box = document.getElementById('paramGroups');
+  box.innerHTML = '';
+  for (let g of gnames) {
+    if (!grp[g]) continue;
+    let d = document.createElement('div'); d.className = 'param-group';
+    let b = document.createElement('button'); b.className = 'param-group-btn';
+    b.textContent = '\u25B8 '+g+' ('+grp[g].length+')';
+    b.onclick = () => { let l = b.nextSibling; l.classList.toggle('open'); b.textContent = (l.classList.contains('open')?'\u25BE':'\u25B8')+' '+g+' ('+grp[g].length+')'; };
+    d.appendChild(b);
+    let l = document.createElement('div'); l.className = 'param-list';
+    for (let idx of grp[g]) {
+      let it = document.createElement('div'); it.className = 'param-item';
+      let u = (PU[idx]&&PU[idx]!=='')?' ['+PU[idx]+']':'';
+      it.textContent = PN[idx]+u; it.dataset.idx = idx;
+      it.onclick = function() {
+        let i = parseInt(this.dataset.idx);
+        let p = sel.indexOf(i);
+        if (p > -1) { sel.splice(p,1); this.classList.remove('sel'); }
+        else { sel.push(i); this.classList.add('sel'); }
+        draw1();
+      };
+      l.appendChild(it);
+    }
+    d.appendChild(l); box.appendChild(d);
+  }
+
+  // Y2 selector
+  let s2 = document.getElementById('y2sel');
+  s2.innerHTML = '';
+  for (let i = 1; i < PN.length; i++) {
+    let o = document.createElement('option'); o.value = i; o.textContent = PN[i]; s2.appendChild(o);
+  }
+  s2.onchange = () => { sel2 = Array.from(s2.selectedOptions).map(o=>parseInt(o.value)); draw2(); };
+}
+
+function fi(nm) {
+  for (let i = 1; i < PN.length; i++) { if (PN[i].trim() === nm) return i; }
+  for (let i = 1; i < PN.length; i++) { if (PN[i].toLowerCase().includes(nm.toLowerCase())) return i; }
+  return -1;
+}
+
+function clr() { document.querySelectorAll('.param-item.sel').forEach(e=>e.classList.remove('sel')); sel = []; }
+
+function pEngine() { clr();
+  ['Eng1 Cutoff SW','Eng2 Cutoff SW','Eng1 N1 Actual','Eng2 N1 Actual','Eng1 N2 Actual','Eng2 N2 Actual'].forEach(t=>{ let i=fi(t); if(i>-1){sel.push(i);let e=document.querySelector('.param-item[data-idx="'+i+'"]');if(e)e.classList.add('sel');}});
+  sel2=[]; draw1(); draw2(); }
+
+function pFlight() { clr();
+  ['Altitude Press','Airspeed Comp','Pitch Angle','Roll Angle'].forEach(t=>{ let i=fi(t); if(i>-1){sel.push(i);let e=document.querySelector('.param-item[data-idx="'+i+'"]');if(e)e.classList.add('sel');}});
+  sel2=[]; draw1(); draw2(); }
+
+function pControls() { clr();
+  ['Ctrl Col Pitch CWS Local','Ctrl Col Pitch CWS Foreign','Aileron L','Aileron R','Elevator L','Elevator R','Ctrl Whl Force Roll CWS'].forEach(t=>{ let i=fi(t); if(i>-1){sel.push(i);let e=document.querySelector('.param-item[data-idx="'+i+'"]');if(e)e.classList.add('sel');}});
+  sel2=[]; draw1(); draw2(); }
+
+function pElec() { clr();
+  ['115 VAC Standby Bus','28 VDC Bus 1','28 VDC Bus 2','APU On','APU N1'].forEach(t=>{ let i=fi(t); if(i>-1){sel.push(i);let e=document.querySelector('.param-item[data-idx="'+i+'"]');if(e)e.classList.add('sel');}});
+  sel2=[]; draw1(); draw2(); }
+
+function draw1() {
+  if (c1) { c1.destroy(); c1 = null; }
+  let cols = ['#007aff','#ff9500','#34c759','#ff3b30','#af52de','#ff2d55','#5856d6','#00c7be'];
+  let ds = [];
+  let tx = D.map(r => r[0]);
+  for (let k = 0; k < sel.length; k++) {
+    let idx = sel[k];
+    let nm = PN[idx]||'p'+idx;
+    let u = (PU[idx]&&PU[idx]!=='')?' ['+PU[idx]+']':'';
+    let vals = D.map(r => { let v=r[idx]; return (v===null||v===undefined||v==='')?null:parseFloat(v); });
+    ds.push({
+      label: nm+u,
+      data: vals.map((v,i)=>({x:tx[i],y:v})),
+      borderColor: cols[k%cols.length],
+      backgroundColor: cols[k%cols.length]+'22',
+      borderWidth: 1.5, pointRadius: 0, tension: 0.2, spanGaps: false
+    });
+  }
+  if (!ds.length) return;
+  c1 = new Chart(document.getElementById('ch1'), {
+    type: 'scatter', data: {datasets: ds},
+    options: {
+      animation: false, responsive: true, maintainAspectRatio: false,
+      interaction: {mode:'nearest',intersect:false,axis:'x'},
+      plugins: {
+        legend: {position:'bottom',labels:{boxWidth:12,padding:12,font:{size:10}}},
+        zoom: {pan:{enabled:true,mode:'x',modifierKey:'shift'},zoom:{wheel:{enabled:true},pinch:{enabled:true},mode:'x'}}
+      },
+      scales: {
+        x: {type:'linear',title:{display:true,text:'Time (seconds)'}},
+        y: {type:'linear',position:'left',title:{display:true,text:'Value'}}
+      }
+    }
+  });
+}
+
+function draw2() {
+  if (c2) { c2.destroy(); c2 = null; }
+  if (!sel2.length) return;
+  let cols = ['#af52de','#ff2d55','#5856d6','#00c7be','#ff6482'];
+  let ds = [];
+  let tx = D.map(r=>r[0]);
+  for (let k = 0; k < sel2.length; k++) {
+    let idx = sel2[k];
+    let vals = D.map(r=>{let v=r[idx];return(v===null||v===undefined||v==='')?null:parseFloat(v);});
+    let u = (PU[idx]&&PU[idx]!=='')?' ['+PU[idx]+']':'';
+    ds.push({
+      label: (PN[idx]||'p'+idx)+u,
+      data: vals.map((v,i)=>({x:tx[i],y:v})),
+      borderColor: cols[k%cols.length],
+      borderWidth: 1.5, pointRadius: 0, tension: 0.2
+    });
+  }
+  c2 = new Chart(document.getElementById('ch2'), {
+    type: 'scatter', data: {datasets: ds},
+    options: {
+      animation: false, responsive: true, maintainAspectRatio: false,
+      interaction: {mode:'nearest',intersect:false,axis:'x'},
+      plugins: {
+        legend: {position:'bottom',labels:{boxWidth:12,padding:12,font:{size:10}}},
+        zoom: {pan:{enabled:true,mode:'x',modifierKey:'shift'},zoom:{wheel:{enabled:true},pinch:{enabled:true},mode:'x'}}
+      },
+      scales: {
+        x: {type:'linear',title:{display:true,text:'Time (seconds)'}},
+        y: {type:'linear',position:'left',title:{display:true,text:'Value'}}
+      }
+    }
+  });
+}
+
+function resetZoom() { if(c1)c1.resetZoom(); if(c2)c2.resetZoom(); }
+function expPNG() { if(c1){let a=document.createElement('a');a.download='mu5735-chart.png';a.href=c1.toBase64Image();a.click();} }
+</script>
+</body>
+</html>
