@@ -235,6 +235,7 @@ function loaded(rows) {
   buildSampleRates();
   buildMAD();
   buildGapMask();
+  buildNativeIdx();
   buildUI();
   pEngine();
 }
@@ -368,6 +369,26 @@ function buildGapMask() {
   }
 }
 
+// ── buildNativeIdx: native-sample positions per discrete column ───────────
+// For each discrete (encoded) column, stores the array of row indices where
+// the column has a real (non-null, non-gap) sample. Used by getVals to run
+// the isolation filter on native-rate data rather than the forward-filled array,
+// so that multi-sample artifact blips (expanded by fill) are correctly detected.
+const NATIVE_IDX = [];
+function buildNativeIdx() {
+  for (let c = 0; c < PN.length; c++) {
+    if (!ENC_MAP[c]) { NATIVE_IDX[c] = null; continue; }
+    let idxArr = [];
+    for (let r = 0; r < D.length; r++) {
+      if (GAP_ROWS[r]) continue;
+      let v = D[r][c];
+      if (v === null || v === undefined || String(v).trim() === '') continue;
+      idxArr.push(r);
+    }
+    NATIVE_IDX[c] = idxArr;
+  }
+}
+
 // ── toNum: convert raw cell → number or null ──────────────────────────────
 function toNum(raw, idx) {
   if (raw === null || raw === undefined || raw === '') return null;
@@ -401,16 +422,53 @@ function getVals(idx, fill) {
     if (v !== null) { last = v; out[i] = v; }
     else out[i] = fill ? last : null;
   }
-  // Impulse filter: null isolated spikes (only for continuous params when filter on)
-  if (filterSentinels && !ENC_MAP[idx] && COL_MAD_THRESH[idx]) {
-    let [med, thresh] = COL_MAD_THRESH[idx];
-    for (let i = 1; i < out.length - 1; i++) {
-      if (out[i] === null) continue;
-      if (Math.abs(out[i] - med) > thresh) {
-        // Check it is isolated: at least one neighbour non-null and at normal level
-        let prevOk = out[i-1] !== null && Math.abs(out[i-1] - med) <= thresh;
-        let nextOk = out[i+1] !== null && Math.abs(out[i+1] - med) <= thresh;
-        if (prevOk || nextOk) out[i] = null;
+  // Impulse filter: null isolated single-sample artifacts (when filter on)
+  if (filterSentinels) {
+    if (!ENC_MAP[idx] && COL_MAD_THRESH[idx]) {
+      // Continuous params: MAD threshold (Tukey window-3, k=3)
+      let [med, thresh] = COL_MAD_THRESH[idx];
+      for (let i = 1; i < out.length - 1; i++) {
+        if (out[i] === null) continue;
+        if (Math.abs(out[i] - med) > thresh) {
+          let prevOk = out[i-1] !== null && Math.abs(out[i-1] - med) <= thresh;
+          let nextOk = out[i+1] !== null && Math.abs(out[i+1] - med) <= thresh;
+          if (prevOk || nextOk) out[i] = null;
+        }
+      }
+    } else {
+      // Discrete params: native-sample run-length filter.
+      // The forward-fill expands a 1-sample native spike into 16 filled positions
+      // (at 16Hz grid / 1Hz native), defeating a simple single-point isolation test.
+      // Instead we work on the native-sample index array (NATIVE_IDX), identify
+      // runs of the minority state that are implausibly short (≤ DISC_ARTIFACT_MAX
+      // native samples AND surrounded by the same state), then null the entire
+      // corresponding range in the filled output array.
+      // Threshold: 5 native samples. At 1 Hz that is 5 s; real mode changes during
+      // cruise persist for many minutes. At 2 Hz it is 2.5 s — still safe.
+      const DISC_ARTIFACT_MAX = 5;
+      let nidx = NATIVE_IDX[idx];
+      if (nidx && nidx.length > 1) {
+        // Build native-sample value array
+        let nv = nidx.map(r => out[r]); // values at native positions (already filled/mapped)
+        // Find runs in native samples
+        let ri = 0;
+        while (ri < nv.length) {
+          let runVal = nv[ri], runEnd = ri;
+          while (runEnd + 1 < nv.length && nv[runEnd + 1] === runVal) runEnd++;
+          let runLen = runEnd - ri + 1;
+          // Check: short run, surrounded on both sides by the same different value
+          if (runLen <= DISC_ARTIFACT_MAX && ri > 0 && runEnd < nv.length - 1) {
+            let before = nv[ri - 1], after = nv[runEnd + 1];
+            if (before === after && before !== runVal) {
+              // Null out the filled array from the start of this native run
+              // to one sample before the next native sample
+              let fillStart = nidx[ri];
+              let fillEnd = (runEnd + 1 < nidx.length) ? nidx[runEnd + 1] - 1 : out.length - 1;
+              for (let k = fillStart; k <= fillEnd; k++) out[k] = null;
+            }
+          }
+          ri = runEnd + 1;
+        }
       }
     }
   }

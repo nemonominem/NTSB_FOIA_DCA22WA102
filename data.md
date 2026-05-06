@@ -161,7 +161,9 @@ Affected columns and invalid-word frequency:
 The EDA_1 explorer applies two layers of filtering when "Filter invalid words" is enabled:
 
 1. **Known invalid-word rejection**: values in the fixed ARINC max-word set (table above) are masked to null before plotting.
-2. **Window-3 MAD impulse filter**: any remaining isolated spike where `|v[i] − column_median| > 3 × MAD` and at least one neighbour is at a normal level is also nulled. This is the standard Tukey (1974) median-filter recipe for shot/impulse noise, applied with the conventional k=3 threshold. The point is omitted, not replaced — `spanGaps:true` in Chart.js bridges the gap visually without fabricating a value.
+2. **Impulse filter** — two branches, one per parameter type:
+   - *Continuous parameters*: window-3 MAD filter (Tukey 1974, k=3). Any sample where `|v[i] − column_median| > 3 × MAD` and at least one neighbour is at a normal level is nulled. The point is omitted, not replaced — `spanGaps:true` in Chart.js bridges the gap visually.
+   - *Discrete (encoded) parameters*: native-sample run-length filter. Because 16 Hz forward-fill expands a 1-sample native spike (at 1 Hz) into 16 filled positions, a simple single-point isolation test is ineffective. Instead the filter works on the native-rate sample sequence: any run of the minority state lasting ≤ 5 native samples that is surrounded on both sides by the same state is classified as an artifact and the entire corresponding filled range is nulled. At 1 Hz native rate, 5 native samples = 5 s; real mode changes during cruise persist for minutes and are not affected.
 
 Even after both layers, brief apparent divergences between correlated parameters may remain due to the non-synchronous phase offsets described above — these are residual artifacts, not real events.
 

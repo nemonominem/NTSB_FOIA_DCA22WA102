@@ -70,6 +70,10 @@ Two distinct data quality issues — do not conflate them:
 - **ARINC bus invalid words**: fixed max-word constants (e.g. 127.88, 1023.0) output by the aircraft bus when a parameter word is stale. Occur on a fixed ~8s cadence. Filtered by `SENTINELS` + `COL_OVERRIDES` + `COL_SENTINELS`. UI checkbox: "Filter invalid words".
 - **Chip U2 dropouts**: physical chip U2 was destroyed at impact. The NTSB substituted `0xFF`. In the CSV this produces rows where ~85%+ of continuous parameters are simultaneously empty, once every ~6.5s for ~1.3s. Detected by `buildGapMask()`, suppressed unconditionally in `getVals()` to break chart lines (not interpolated through).
 
+### Impulse filter — two branches in getVals()
+- **Continuous params**: window-3 MAD filter (Tukey k=3). Isolated samples where `|v[i] − median| > 3×MAD` with at least one normal neighbour are nulled.
+- **Discrete (encoded) params**: native-sample run-length filter via `NATIVE_IDX`. Forward-fill expands a 1-sample native spike (1 Hz) into 16 filled positions, defeating a point-isolation test. Instead: on the native-rate sample sequence, any run of the minority state ≤ 5 native samples surrounded by the same state is nulled across the full corresponding filled range. 5 native samples at 1 Hz = 5 s — real mode changes in cruise last minutes. Built by `buildNativeIdx()` at load, called after `buildGapMask()`.
+
 ---
 
 ## Data Files
