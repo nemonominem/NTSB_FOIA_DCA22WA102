@@ -156,7 +156,14 @@ Affected columns and invalid-word frequency:
 | FMC Selected Altitude | 65520.0 | 175 / 775 (22%) |
 | Selected Altitude FCC | 65520.0 | 98 / 775 (13%) |
 
-**Handling**: reject any value in the invalid-word set before computing statistics, plotting, or fitting. Do not forward-fill through them — treat them as missing. The EDA_1 explorer applies this filter automatically (checkbox: "Filter invalid words"). Note that even with filtering enabled, brief apparent divergences between correlated parameters will remain due to the non-synchronous phase offsets described above — these are artifacts, not real events.
+**Handling**: reject any value in the invalid-word set before computing statistics, plotting, or fitting. Do not forward-fill through them — treat them as missing.
+
+The EDA_1 explorer applies two layers of filtering when "Filter invalid words" is enabled:
+
+1. **Known invalid-word rejection**: values in the fixed ARINC max-word set (table above) are masked to null before plotting.
+2. **Window-3 MAD impulse filter**: any remaining isolated spike where `|v[i] − column_median| > 3 × MAD` and at least one neighbour is at a normal level is also nulled. This is the standard Tukey (1974) median-filter recipe for shot/impulse noise, applied with the conventional k=3 threshold. The point is omitted, not replaced — `spanGaps:true` in Chart.js bridges the gap visually without fabricating a value.
+
+Even after both layers, brief apparent divergences between correlated parameters may remain due to the non-synchronous phase offsets described above — these are residual artifacts, not real events.
 
 ---
 

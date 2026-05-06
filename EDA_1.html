@@ -84,8 +84,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         Parameters are recorded at their native FDR rate (16 Hz down to 0.25 Hz — see <a href="observables.md" style="color:#1565c0">observables.md</a>) and resampled to a 16 Hz grid by step-holding the last known value. A flat line between two points means <em>no new data was received</em>, not that the value was constant. Enable point markers (checkbox below) to see where actual samples occur.
       </div>
       <div style="padding:7px 12px;background:#f3f0fa;border-left:3px solid #8e44ad;border-radius:4px;font-size:0.84rem;color:#3b1f5e">
-        <strong>Periodic spikes/drops persist even with "Filter invalid words" on.</strong>
-        ARINC bus invalid words occur on an ~8s cadence but are <em>not synchronous</em> across parameters — each has its own phase offset within the FDR frame. Filtered gaps in one series do not align with gaps in another, causing brief apparent excursions between correlated parameters. These are recorder artifacts, not real events. The NTSB's own FDR plots exclude them.
+        <strong>Residual spikes may still appear even with "Filter invalid words" on.</strong>
+        ARINC bus invalid words occur on an ~8s cadence but are <em>not synchronous</em> across parameters — each has its own phase offset within the FDR frame. The explorer applies a window-3 MAD impulse filter (k=3, Tukey 1974) to null isolated spikes automatically. Any remaining excursions between correlated parameters are residual recorder artifacts, not real events.
       </div>
     </div>
     <button onclick="toggleNotices()" id="noticesToggle"
@@ -233,6 +233,7 @@ function loaded(rows) {
 
   buildColSentinels();
   buildSampleRates();
+  buildMAD();
   buildGapMask();
   buildUI();
   pEngine();
@@ -313,6 +314,36 @@ function buildSampleRates() {
   }
 }
 
+// ── MAD-based impulse filter (window-3 median, k=3) ─────────────────────
+// For each continuous column, compute the column median and MAD (median absolute
+// deviation). Any isolated single sample where |v[i] - col_median| > k*MAD
+// is flagged as an impulse artifact and nulled in getVals().
+// Based on Tukey (1974) median filter — standard recipe for shot/impulse noise.
+// k=3 is the conventional threshold (matches "3-sigma" intuition for MAD).
+const MAD_K = 3;
+let COL_MAD_THRESH = []; // per column: [median, k*MAD] or null if not computed
+
+function buildMAD() {
+  COL_MAD_THRESH = new Array(PN.length).fill(null);
+  for (let col = 1; col < PN.length; col++) {
+    if (ENC_MAP[col]) continue; // skip discrete params
+    let vals = [];
+    for (let row of D) {
+      if (col >= row.length || row[col] === '' || row[col] === null || row[col] === undefined) continue;
+      let f = parseFloat(row[col]);
+      if (isNaN(f) || SENTINELS.has(f)) continue;
+      vals.push(f);
+    }
+    if (vals.length < 10) continue;
+    let sorted = [...vals].sort((a, b) => a - b);
+    let med = sorted[Math.floor(sorted.length / 2)];
+    let absDevs = vals.map(v => Math.abs(v - med)).sort((a, b) => a - b);
+    let mad = absDevs[Math.floor(absDevs.length / 2)];
+    if (mad < 1e-9) continue; // constant signal — no meaningful MAD
+    COL_MAD_THRESH[col] = [med, MAD_K * mad];
+  }
+}
+
 // ── Gap mask: detect U2 chip dropout intervals ───────────────────────────
 // The FDR data stream is striped across 6 chips. Chip U2 was unreadable.
 // This creates periodic ~1.3s dropouts every ~6.5s (per NTSB report §2.2).
@@ -359,6 +390,9 @@ function toNum(raw, idx) {
 
 // ── getVals: extract + forward-fill for one column ───────────────────────
 // Gap rows (chip U2 dropouts) are always returned as null to break the line.
+// When filterSentinels is on, applies a window-3 MAD impulse filter (k=3):
+// any isolated sample where |v[i] - col_median| > 3*MAD is nulled.
+// "Isolated" = both neighbours are non-null and the spike returns to baseline.
 function getVals(idx, fill) {
   let out = new Array(D.length), last = null;
   for (let i = 0; i < D.length; i++) {
@@ -366,6 +400,19 @@ function getVals(idx, fill) {
     let v = toNum(D[i][idx], idx);
     if (v !== null) { last = v; out[i] = v; }
     else out[i] = fill ? last : null;
+  }
+  // Impulse filter: null isolated spikes (only for continuous params when filter on)
+  if (filterSentinels && !ENC_MAP[idx] && COL_MAD_THRESH[idx]) {
+    let [med, thresh] = COL_MAD_THRESH[idx];
+    for (let i = 1; i < out.length - 1; i++) {
+      if (out[i] === null) continue;
+      if (Math.abs(out[i] - med) > thresh) {
+        // Check it is isolated: at least one neighbour non-null and at normal level
+        let prevOk = out[i-1] !== null && Math.abs(out[i-1] - med) <= thresh;
+        let nextOk = out[i+1] !== null && Math.abs(out[i+1] - med) <= thresh;
+        if (prevOk || nextOk) out[i] = null;
+      }
+    }
   }
   return out;
 }
