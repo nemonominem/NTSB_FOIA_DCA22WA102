@@ -421,3 +421,31 @@ The CVR captured all of this but was provided exclusively to the CAAC and is not
 | Crew inputs (pitch) | Both columns pushed forward, same direction, increasing force to sensor max | No crew conflict; both pilots applying forward column together |
 | Crew inputs (timing) | Forward column inputs began at T=−17.5s, ~2s after cutoff | Crew response was immediate |
 | FDR end state | −35.9° pitch, −167.9° roll, ~26,000 ft, N1~25.6% (windmilling) | Near-inverted, steep dive, engines not producing thrust |
+
+---
+
+## 9. Post-Cutoff Fuel-Flow Anomaly
+
+After both fuel cutoff switches moved to CUTOFF at T=−19.4s, the FDR records a brief but visible **rise in fuel flow** for both engines around T=−9 to T=−7s — peaking at ~1,056 pph (Eng1) and ~208 pph (Eng2) — before reaching zero by T=−5.75s. This is not a re-ignition event.
+
+![FIG 6 — Engine cutoff and post-cutoff fuel-flow anomaly (last 60 s)](support/figures/fuel_flow_anomaly.png)
+
+### What the data shows
+
+- **N1 fan speed** (panel 1, dots) decays monotonically from 83.5% at cutoff to ~25.6% at FDR power loss, with no recovery. A re-ignition would produce a N1 inflection. None is present.
+- **Fuel flow** (panel 1, lines) drops from ~2,600 pph cruise level immediately after cutoff, then rises briefly to ~1,000 pph at T=−9s to −7s before reaching zero. The rise is not accompanied by any N1 response.
+- **Altitude and airspeed** (panel 2): the aircraft is in a steep, accelerating dive at this point — altitude falling through ~20,000 ft, indicated airspeed rising rapidly as the aircraft descends.
+- **Pitch and roll** (panel 3): at T=−9s the aircraft is approximately −155° roll (near-inverted) and −20° pitch (steep nose-down). This is an extreme attitude not seen in normal flight.
+- **Vertical acceleration** (panel 4): large negative g loads (−2 to −3 g) are recorded in the same window as the fuel-flow anomaly.
+
+### Mechanism
+
+The fuel flow sensor measures fuel mass passing through the fuel flow meter in the supply line, not combustion events. After the cutoff valve closes, fuel movement does not immediately stop: the remaining fuel under pressure in the lines continues to move briefly until the system depressurises. Under the extreme inertial environment at T=−9s — near-inverted attitude, rapidly increasing airspeed, and −2 to −3 g vertical acceleration — fuel in the tanks and lines is subject to large, atypical acceleration vectors. This produces transient pressure differentials across the flow meter that generate non-zero flow readings even though the cutoff valve is closed and no combustion is occurring.
+
+The asymmetry between the two engines (Eng1 peak ~1,056 pph vs. Eng2 peak ~208 pph) is consistent with this mechanism: the two fuel systems are physically separate and experience slightly different inertial loads depending on their geometry and the aircraft's angular motion. The flows reach zero by T=−5.75s as the fuel lines fully depressurise.
+
+### Significance
+
+The fuel-flow anomaly has no operational significance — it does not indicate any thrust being produced after cutoff. N1 is the definitive thrust indicator, and its continuous monotonic decay from cutoff to FDR power loss confirms both engines were unpowered throughout the dive.
+
+The anomaly is nonetheless informative as a consistency check: it confirms the aircraft was in an extreme attitude and high-g environment at T=−9s, consistent with the pitch and roll data, and that the fuel systems behaved physically plausibly under those conditions.

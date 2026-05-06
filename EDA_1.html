@@ -85,7 +85,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       </div>
       <div style="padding:7px 12px;background:#f3f0fa;border-left:3px solid #8e44ad;border-radius:4px;font-size:0.84rem;color:#3b1f5e">
         <strong>Residual spikes may still appear even with "Filter invalid words" on.</strong>
-        ARINC bus invalid words occur on an ~8s cadence but are <em>not synchronous</em> across parameters — each has its own phase offset within the FDR frame. The explorer applies a window-3 MAD impulse filter (k=3, Tukey 1974) to null isolated spikes automatically. Any remaining excursions between correlated parameters are residual recorder artifacts, not real events.
+        ARINC bus invalid words occur on an ~8s cadence but are <em>not synchronous</em> across parameters — each has its own phase offset within the FDR frame. Two filter branches are applied: a window-3 MAD impulse filter (k=3, Tukey 1974) for continuous parameters; and a native-sample run-length filter for discrete (encoded) parameters — short runs of the minority state (≤5 native samples, surrounded by the same state) are nulled including their forward-filled extent. Any remaining excursions between correlated parameters are residual recorder artifacts, not real events.
       </div>
     </div>
     <button onclick="toggleNotices()" id="noticesToggle"
@@ -837,7 +837,35 @@ function resetZoomFull() {
 }
 
 function expPNG() {
-  if (c1) { let a=document.createElement('a'); a.download='mu5735-chart.png'; a.href=c1.toBase64Image(); a.click(); }
+  // Collect all visible chart canvases: main chart + stacked sub-charts
+  let canvases = [];
+  if (c1) canvases.push(c1.canvas);
+  for (let sc of stackedCharts) { if (sc && sc.canvas) canvases.push(sc.canvas); }
+  if (!canvases.length) return;
+
+  // Measure total height and max width
+  let gap = 4; // px between panels
+  let totalH = canvases.reduce((s, cv, i) => s + cv.height + (i ? gap : 0), 0);
+  let maxW = Math.max(...canvases.map(cv => cv.width));
+
+  // Composite onto a single off-screen canvas
+  let out = document.createElement('canvas');
+  out.width  = maxW;
+  out.height = totalH;
+  let ctx = out.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, out.width, out.height);
+
+  let y = 0;
+  for (let cv of canvases) {
+    ctx.drawImage(cv, 0, y, cv.width, cv.height);
+    y += cv.height + gap;
+  }
+
+  let a = document.createElement('a');
+  a.download = 'mu5735-chart.png';
+  a.href = out.toDataURL('image/png');
+  a.click();
 }
 
 // ── Embedded CSV ──────────────────────────────────────────────────────────
