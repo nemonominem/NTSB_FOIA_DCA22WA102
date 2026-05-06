@@ -36,6 +36,16 @@ The raw FDR data stream (ARINC 717 format) is a fixed-rate multiplex frame that 
 
 **Discrete** parameters are binary or enumerated states (ON/OFF, ENGAGED/DISENGAGED, etc.) encoded in the FDR as integer values and decoded by the NTSB software into labels. In the CSV, their encoding definitions appear in row 14 in the format `%N(0.0:0.0="OFF",1.0:1.0="ON")`. In the EDA_1 explorer these are rendered as step functions using stepped rendering.
 
+## Invalid Words — Important Caveats
+
+Where a parameter description says **Invalid word: X**, that value is an ARINC bus max-word constant output when the parameter is not refreshed. Several non-obvious properties:
+
+- **Not synchronous across parameters.** Each parameter sits at a fixed slot in the 512-word FDR subframe. Invalid words for different parameters fall at different time offsets within each 8-second cycle. Two related parameters (e.g. Eng1 N1 and Eng2 N1) will have their invalid words at slightly different times, causing brief apparent divergence when plotted together even after filtering. These are artifacts.
+- **Cadence is approximately 8 seconds, not exactly.** The 512-word subframe runs at 64 words/second = 8 s/cycle, but individual parameter positions within the frame produce offsets that are not round numbers.
+- **Not all samples are affected.** The fraction of invalid samples varies by parameter (13%–50%) and does not follow a uniform pattern through time.
+
+See `data.md` for the full invalid-word table and handling guidance.
+
 ---
 
 ## Parameter Reference
@@ -46,7 +56,7 @@ These three parameters are sampled at the highest rate in the dataset (16 Hz = o
 
 | Parameter | Unit | Description |
 |---|---|---|
-| `Accel Vert` | g | Vertical acceleration measured by the inertial reference unit. 1.0 g = normal cruise (1 g upward). Negative = downward load. During the MU5735 dive, this showed extreme negative-g excursions indicating sustained inverted or near-inverted loading. **Sentinel: 5.9996 g** (ARINC word max) — appears throughout the recording and must be rejected. |
+| `Accel Vert` | g | Vertical acceleration measured by the inertial reference unit. 1.0 g = normal cruise (1 g upward). Negative = downward load. During the MU5735 dive, this showed extreme negative-g excursions indicating sustained inverted or near-inverted loading. **Invalid word: 5.9996 g** (ARINC word max) — appears throughout the recording and must be rejected. |
 | `Accel Long` | g | Longitudinal (fore-aft) acceleration. Positive = forward thrust or braking deceleration. |
 | `Accel Lat` | g | Lateral (sideways) acceleration. |
 
@@ -89,7 +99,7 @@ Sampled at 4 Hz (once per 250 ms).
 | `Altitude Press` | ft | Pressure altitude from the Air Data Computer. The FDR recording covers from cruise at ~29,000 ft down to ~26,000 ft, where the FDR lost power. **Sentinels: −1.0, 0.0** (appear as spikes at the start of the recording). |
 | `Airspeed Comp` | kts | Computed (calibrated) airspeed. **Sentinels: 0.0**. |
 | `Heading` | deg | Magnetic heading. |
-| `Ground Spd` | kts | GPS/IRS ground speed. **Sentinel: 1023.5** (10-bit max). |
+| `Ground Spd` | kts | GPS/IRS ground speed. **Invalid word: 1023.5** (10-bit max). |
 | `Aileron Actuator Pos-L` | deg | Left aileron hydraulic actuator position (surface, not column). |
 | `Aileron Quadrant Pos` | deg | Aileron cable quadrant position. |
 | `Aileron Roll Cmd-L` | deg | Left aileron roll command from the FCC. |
@@ -110,17 +120,17 @@ Sampled at 1 Hz (once per second). **Critical parameters for MU5735.**
 | Parameter | Unit | Description |
 |---|---|---|
 | `Eng1 Cutoff SW` / `Eng2 Cutoff SW` | discrete | **Fuel cutoff switch position** for engine 1 and 2. States: `RUN` (normal operation) or `CUTOFF` (fuel flow cut). Both switches moved from RUN to CUTOFF at ~29,000 ft cruise — this is the **primary FDR finding** for the MU5735 accident. |
-| `Eng1 N1` / `Eng2 N1` | %RPM | **Engine fan speed** (low-pressure compressor/fan rotor, "N1 spool") as a percentage of the maximum rated RPM. At cruise this was approximately 83–84%. N1 is the primary engine thrust indicator — throttle settings are expressed in terms of target %N1. After fuel cutoff, N1 decays as the fan spools down. **Sentinel: 127.88** (7-bit max × scale). Sampled at 1 Hz — the displayed post-cutoff lag in EDA_1 is a forward-fill artifact, not a real delay. |
-| `Eng1 N2 Actual` / `Eng2 N2 Actual` | %RPM | **Engine core speed** (high-pressure compressor/turbine, "N2 spool") as a percentage of rated RPM. At cruise ~95–96%. N2 is directly coupled to the AC generators — when N2 falls below ~56%, the generator trips offline. Loss of AC generation causes the FDR to lose power. **Sentinel: 127.875**. |
-| `Eng1 N1 Cmd` / `Eng2 N1 Cmd` | %RPM | N1 command from the Full Authority Digital Engine Control (FADEC). **Sentinel: 127.875**. |
-| `Eng1 EGT` / `Eng2 EGT` | °C | **Exhaust Gas Temperature**. At cruise this was around 600–700°C. Falls after fuel cutoff as combustion stops. **Sentinel: 1023.0** (10-bit max). |
-| `Eng1 Fuel Flow` / `Eng2 Fuel Flow` | pph | **Fuel flow rate** in pounds per hour. At cruise ~2,000–2,500 pph per engine. Drops to ~0 after cutoff switch moves. **Sentinel: 16368.0**. |
-| `Eng1 FMC N1 Target` / `Eng2 FMC N1 Target` | %RPM | FMC-computed N1 target (the value the FMC wants N1 to be). **Sentinel: 127.0**. |
+| `Eng1 N1` / `Eng2 N1` | %RPM | **Engine fan speed** (low-pressure compressor/fan rotor, "N1 spool") as a percentage of the maximum rated RPM. At cruise this was approximately 83–84%. N1 is the primary engine thrust indicator — throttle settings are expressed in terms of target %N1. After fuel cutoff, N1 decays as the fan spools down. **Invalid word: 127.88** (7-bit max × scale). Sampled at 1 Hz — the displayed post-cutoff lag in EDA_1 is a forward-fill artifact, not a real delay. |
+| `Eng1 N2 Actual` / `Eng2 N2 Actual` | %RPM | **Engine core speed** (high-pressure compressor/turbine, "N2 spool") as a percentage of rated RPM. At cruise ~95–96%. N2 is directly coupled to the AC generators — when N2 falls below ~56%, the generator trips offline. Loss of AC generation causes the FDR to lose power. **Invalid word: 127.875**. |
+| `Eng1 N1 Cmd` / `Eng2 N1 Cmd` | %RPM | N1 command from the Full Authority Digital Engine Control (FADEC). **Invalid word: 127.875**. |
+| `Eng1 EGT` / `Eng2 EGT` | °C | **Exhaust Gas Temperature**. At cruise this was around 600–700°C. Falls after fuel cutoff as combustion stops. **Invalid word: 1023.0** (10-bit max). |
+| `Eng1 Fuel Flow` / `Eng2 Fuel Flow` | pph | **Fuel flow rate** in pounds per hour. At cruise ~2,000–2,500 pph per engine. Drops to ~0 after cutoff switch moves. **Invalid word: 16368.0**. |
+| `Eng1 FMC N1 Target` / `Eng2 FMC N1 Target` | %RPM | FMC-computed N1 target (the value the FMC wants N1 to be). **Invalid word: 127.0**. |
 | `Flap Handle Pos` | deg | Flap lever position in the cockpit. 0 = flaps up (cruise configuration). |
 | `Flap-L` / `Flap-R` | deg | Left and right flap surface positions. |
-| `Hyd Oil Press - A` / `Hyd Oil Press - B` | psi | Hydraulic system A and B pressure. Normal operating pressure ~3,000 psi. **Sentinel: 4092.0**. |
+| `Hyd Oil Press - A` / `Hyd Oil Press - B` | psi | Hydraulic system A and B pressure. Normal operating pressure ~3,000 psi. **Invalid word: 4092.0**. |
 | `Hydraulic Oil Pressure Standby` | psi | Standby hydraulic system pressure. Raw values in this file show anomalous scaling — treat with caution. |
-| `Groundspeed Disp -L` | kts | Ground speed display value (left). **Sentinel: 1023.5**. |
+| `Groundspeed Disp -L` | kts | Ground speed display value (left). **Invalid word: 1023.5**. |
 | Various FCC autoflight mode flags | discrete | See Autopilot section below. |
 
 ---
@@ -129,7 +139,7 @@ Sampled at 1 Hz (once per second). **Critical parameters for MU5735.**
 
 | Parameter | Unit | Description |
 |---|---|---|
-| `Eng1 FMC N1 Bug Drive` / `Eng2 FMC N1 Bug Drive` | %RPM | FMC N1 bug (reference marker) drive value. Sampled every 2 seconds. **Sentinel: 127.0**. |
+| `Eng1 FMC N1 Bug Drive` / `Eng2 FMC N1 Bug Drive` | %RPM | FMC N1 bug (reference marker) drive value. Sampled every 2 seconds. **Invalid word: 127.0**. |
 
 ---
 
@@ -139,8 +149,8 @@ Sampled once every 4 seconds.
 
 | Parameter | Unit | Description |
 |---|---|---|
-| `Eng1 N1 Tach` / `Eng2 N1 Tach` | %RPM | N1 tachometer signal (independent channel from `Eng1 N1`). **Sentinel: 127.875**. |
-| `Eng1 N2 Tach` | %RPM | N2 tachometer signal. **Sentinel: 127.875**. |
+| `Eng1 N1 Tach` / `Eng2 N1 Tach` | %RPM | N1 tachometer signal (independent channel from `Eng1 N1`). **Invalid word: 127.875**. |
+| `Eng1 N2 Tach` | %RPM | N2 tachometer signal. **Invalid word: 127.875**. |
 | `Eng1 N1 Ref` / `Eng2 N1 Ref` | %RPM | N1 reference value. |
 | `Eng1 FMV Pos` / `Eng2 FMV Pos` | % | Fuel Metering Valve position. 0% = closed (no fuel). |
 | `Eng1 Oil Qty` / `Eng2 Oil Qty` | qt | Engine oil quantity in quarts. |
@@ -160,10 +170,10 @@ Sampled once every 8 seconds.
 
 | Parameter | Unit | Description |
 |---|---|---|
-| `APU N1` | %RPM | Auxiliary Power Unit speed. APU was off during the accident flight. **Sentinel: 127.5**. |
-| `Eng1 Oil Press` | psi | Engine 1 oil pressure. **Sentinel: 1023.0**. |
+| `APU N1` | %RPM | Auxiliary Power Unit speed. APU was off during the accident flight. **Invalid word: 127.5**. |
+| `Eng1 Oil Press` | psi | Engine 1 oil pressure. **Invalid word: 1023.0**. |
 | `Eng2 N2 Tach` | %RPM | Engine 2 N2 tachometer (0.125 Hz channel). |
-| `Airspeed Max Allowable` | kts | Maximum allowable airspeed (VMO) computed by the Air Data Computer. **Sentinel: 1023.0**. |
+| `Airspeed Max Allowable` | kts | Maximum allowable airspeed (VMO) computed by the Air Data Computer. **Invalid word: 1023.0**. |
 
 ---
 
@@ -248,10 +258,10 @@ All discrete (powered/unpowered). Sampled at 1 Hz. These showed the AC buses goi
 
 | Parameter | Unit | Description |
 |---|---|---|
-| `FMC Selected Altitude` | ft | Altitude target selected in the FMC. **Sentinel: 65520.0** (16-bit max). |
+| `FMC Selected Altitude` | ft | Altitude target selected in the FMC. **Invalid word: 65520.0** (16-bit max). |
 | `FMC Selected Airspeed` | kts | Speed target from FMC. |
 | `FMC Selected Mach` | mach | Mach target from FMC. |
-| `Selected Altitude FCC` | ft | Altitude selected on the MCP (autopilot control panel). **Sentinel: 65520.0**. |
+| `Selected Altitude FCC` | ft | Altitude selected on the MCP (autopilot control panel). **Invalid word: 65520.0**. |
 | `Selected Airspeed FCC` | kts | Speed selected on the MCP. |
 | `Selected Mach FCC` | mach | Mach selected on the MCP. |
 | `Selected Vertical Speed FCC` | fpm | Vertical speed selected on the MCP. |

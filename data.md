@@ -100,13 +100,23 @@ The CSV files use a multi-row header before the time-series data begins:
 - Discrete (on/off, engaged/not engaged) parameters are encoded as `0.0` / `1.0` with text labels defined in row 14
 - The `ExactSample` file is approximately 10× larger than `TableResolution` due to sparse encoding
 
-### Sentinel / Invalid-Word Values
+### Invalid-Word Values (chip U2 dropouts)
 
-A significant fraction of numeric cells contain **recorder sentinel values** — fixed out-of-range constants that the FDR outputs when a parameter word has not updated or is otherwise unavailable. These are not real measurements and must be rejected before analysis.
+Two distinct types of bad values appear in the CSV:
 
-The sentinels correspond to saturated ARINC 429 / BCD bus words at common word widths:
+**1. Chip U2 dropouts.** Per the NTSB Combined Download Report (§2.2), FDR flash memory chip U2 was physically destroyed by the impact. The data stream is striped across 6 chips at ~1.3 s per chip per cycle. With U2 missing, a ~1.3 s gap appears every ~6.5 s throughout the recording. The NTSB substituted `0xFF` bytes for the missing chip and time-corrected the stream. In the CSV, these dropout intervals appear as rows where most continuous parameters are simultaneously empty — the EDA_1 explorer detects and gaps these rows to avoid bridging across them.
 
-| Sentinel value | Word width / pattern |
+**2. ARINC bus max-word values ("invalid words").** A separate issue: for some parameters, individual samples are replaced by the ARINC/BCD bus maximum value — a fixed constant the bus outputs when a parameter word has not been refreshed or is otherwise unavailable. They are **not** related to chip U2; they originate in the aircraft bus before the FDR even records them. In the ARINC 717 standard these are called "invalid words." The NTSB's own FDR plots exclude them.
+
+**Key characteristics — read before interpreting plots:**
+
+- **Not synchronous across parameters.** Each parameter occupies a fixed slot within the FDR's 512-word subframe and receives an invalid word at its own phase offset. Eng1 N1 may be invalid at T=−32.0s while Eng2 N1 is valid, and vice versa. When multiple parameters are plotted together, filtered gaps in one series will not align with filtered gaps in another, producing brief apparent divergences between otherwise correlated parameters (e.g. Eng1 N1 vs Eng2 N1 appearing to separate momentarily). These are artifacts.
+- **Approximate 8-second cadence, not exact.** The repeat interval corresponds to the 512-word FDR subframe cycle at 64 words/second (= 8 s), but the precise timing depends on each parameter's position within the frame and the frame's relationship to the original recording clock. Do not treat the 8 s figure as a hard period.
+- **Not every sample in a parameter is affected.** The invalid-word fraction varies widely across parameters (13%–50% of samples for the most affected) and is not uniformly distributed through time.
+
+The invalid words correspond to saturated ARINC 429 / BCD bus words at common word widths:
+
+| Invalid word value | Word width / pattern |
 |---|---|
 | 127.0, 127.875, 127.88 | 7-bit max (`0x7F`) at various scale factors |
 | 127.5 | 7-bit max, half-step resolution |
@@ -116,9 +126,9 @@ The sentinels correspond to saturated ARINC 429 / BCD bus words at common word w
 | 16368.0 | 14-bit near-max (fuel flow word) |
 | 65520.0, 65535.0 | 16-bit max (`0xFFFF`) |
 
-Affected columns and sentinel frequency:
+Affected columns and invalid-word frequency:
 
-| Parameter | Sentinel | Affected samples |
+| Parameter | Invalid word | Affected samples |
 |---|---|---|
 | Eng1 N1 | 127.88 | 175 / 775 (22%) |
 | Eng2 N1 | 127.88 | 98 / 775 (13%) |
@@ -146,9 +156,7 @@ Affected columns and sentinel frequency:
 | FMC Selected Altitude | 65520.0 | 175 / 775 (22%) |
 | Selected Altitude FCC | 65520.0 | 98 / 775 (13%) |
 
-The sentinels appear on a fixed cadence (typically every 8 seconds) matching the FDR frame structure, confirming they are a recorder artifact rather than physically real excursions. For example, Eng1 N1 alternates between the real ~84% cruise value and the 127.88 sentinel every 8 seconds with no intermediate transitions.
-
-**Handling**: reject any value in the sentinel set before computing statistics, plotting, or fitting. Do not forward-fill through them — treat them as missing. The `EDA_1_fixed.html` explorer applies this filter automatically via its `toNum()` function.
+**Handling**: reject any value in the invalid-word set before computing statistics, plotting, or fitting. Do not forward-fill through them — treat them as missing. The EDA_1 explorer applies this filter automatically (checkbox: "Filter invalid words"). Note that even with filtering enabled, brief apparent divergences between correlated parameters will remain due to the non-synchronous phase offsets described above — these are artifacts, not real events.
 
 ---
 

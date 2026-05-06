@@ -2,75 +2,127 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MU5735 FDR Data Explorer — NTSB DCA22WA102</title>
+<title>MU5735 FDR Data Explorer — NTSB DCA22WA102 — v1.1.0</title>
 <style>
+/* Base: +2pt font (1rem = 18px effectively via 0.9rem base shift) */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f7;color:#1d1d1f;padding:20px}
-.header{max-width:1400px;margin:0 auto 20px}
-.header h1{font-size:1.5rem;font-weight:600;margin-bottom:4px}
-.header p{color:#6e6e73;font-size:0.9rem}
-.layout{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:280px 1fr;gap:20px}
-.sidebar{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.08);height:fit-content;position:sticky;top:20px;max-height:calc(100vh - 40px);overflow-y:auto}
-.sidebar h2{font-size:0.85rem;font-weight:600;margin-bottom:10px;color:#6e6e73;text-transform:uppercase;letter-spacing:.5px}
-#loadStatus{padding:8px 12px;border-radius:8px;font-size:0.85rem;margin-bottom:12px}
+html{font-size:18px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f7;color:#1d1d1f;padding:16px}
+
+/* Header */
+.header{max-width:1600px;margin:0 auto 16px}
+.header h1{font-size:1.4rem;font-weight:600;margin-bottom:4px}
+.header p{color:#6e6e73;font-size:0.85rem}
+
+/* Layout: sidebar collapsible */
+.layout{max-width:1600px;margin:0 auto;display:grid;grid-template-columns:var(--sidebar-w,290px) 1fr;gap:16px;transition:grid-template-columns .25s ease}
+.layout.collapsed{grid-template-columns:40px 1fr}
+
+/* Sidebar */
+.sidebar{background:#fff;border-radius:12px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);height:fit-content;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;overflow-x:hidden;transition:padding .25s,min-width .25s}
+.layout.collapsed .sidebar{padding:8px 4px;overflow:hidden}
+.sidebar-inner{transition:opacity .2s}
+.layout.collapsed .sidebar-inner{opacity:0;pointer-events:none;height:0;overflow:hidden}
+
+/* Collapse toggle button */
+#sidebarToggle{position:absolute;top:12px;right:-14px;z-index:10;width:28px;height:28px;border-radius:50%;border:1px solid #e0e0e0;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:#555;transition:transform .25s}
+.layout.collapsed #sidebarToggle{transform:scaleX(-1)}
+.sidebar-wrap{position:relative}
+
+.sidebar h2{font-size:0.82rem;font-weight:600;margin-bottom:8px;color:#6e6e73;text-transform:uppercase;letter-spacing:.5px}
+#loadStatus{padding:7px 10px;border-radius:8px;font-size:0.82rem;margin-bottom:10px}
 #loadStatus.loading{background:#fff3e0;color:#e65100}
 #loadStatus.ready{background:#e8f5e9;color:#2e7d32}
 #loadStatus.error{background:#ffebee;color:#c62828}
-.param-group{margin-bottom:6px}
+
+/* Parameter groups */
+.param-group{margin-bottom:5px}
 .param-group-btn{width:100%;text-align:left;padding:6px 10px;background:#f5f5f7;border:none;border-radius:6px;font-size:0.8rem;font-weight:500;cursor:pointer;color:#1d1d1f}
 .param-group-btn:hover{background:#e8e8ed}
-.param-list{display:none;margin-top:3px}
+.param-list{display:none;margin-top:2px}
 .param-list.open{display:block}
-.param-item{padding:3px 10px;font-size:0.75rem;cursor:pointer;border-radius:4px;color:#515154}
+.param-item{padding:3px 10px;font-size:0.77rem;cursor:pointer;border-radius:4px;color:#515154;line-height:1.4}
 .param-item:hover{background:#e8e8ed;color:#1d1d1f}
 .param-item.sel{background:#007aff;color:#fff}
-.main-area{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08);min-height:500px}
-.chart-wrap{position:relative;width:100%;height:500px;margin-bottom:20px}
-.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
-.controls button{padding:6px 14px;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer}
+
+/* Main area */
+.main-area{background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.08);min-height:500px;min-width:0}
+.chart-wrap{position:relative;width:100%;height:480px;margin-bottom:16px}
+.controls{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.controls button{padding:6px 13px;border:none;border-radius:6px;font-size:0.82rem;cursor:pointer}
 .btn-pri{background:#007aff;color:#fff}
 .btn-sec{background:#e8e8ed;color:#1d1d1f}
-#info{font-size:0.85rem;color:#6e6e73;font-family:monospace;margin-left:auto}
+#info{font-size:0.8rem;color:#6e6e73;font-family:monospace;margin-left:auto;white-space:nowrap}
 .landing{display:flex;align-items:center;justify-content:center;min-height:400px;color:#6e6e73;text-align:center}
-.sentinel-toggle{display:flex;align-items:center;gap:6px;font-size:0.8rem;color:#515154;padding:4px 8px;background:#f5f5f7;border-radius:6px;cursor:pointer;user-select:none}
+.sentinel-toggle{display:flex;align-items:center;gap:5px;font-size:0.8rem;color:#515154;padding:4px 8px;background:#f5f5f7;border-radius:6px;cursor:pointer;user-select:none}
 .sentinel-toggle input{cursor:pointer;width:14px;height:14px;accent-color:#007aff}
-@media(max-width:768px){.layout{grid-template-columns:1fr}.sidebar{position:static;max-height:none}}
+
+/* Responsive: narrow screens stack vertically */
+@media(max-width:700px){
+  html{font-size:17px}
+  .layout{grid-template-columns:1fr!important}
+  .sidebar{position:static;max-height:none}
+  .sidebar-wrap{position:static}
+  #sidebarToggle{display:none}
+}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>MU5735 FDR Data Explorer — NTSB DCA22WA102</h1>
+  <h1>MU5735 FDR Data Explorer — NTSB DCA22WA102 <span style="font-size:0.75rem;font-weight:400;color:#9e9ea0;vertical-align:middle">v1.1.0</span></h1>
   <p>CSV: <code>DCA22WA102-220414-AllValidated-TableResolution.csv</code> &middot; 16 Hz resampled &middot; ~12,400 rows &middot; 160+ parameters &middot; <a href="data.md">About the data</a></p>
-  <p style="margin-top:6px;padding:7px 12px;background:#fff3e0;border-left:3px solid #e65100;border-radius:4px;font-size:0.85rem;color:#5d3200;max-width:900px">
-    <strong>FDR only — recording ends ~10 min before impact.</strong>
-    Both engine fuel cutoff switches were moved to CUTOFF at ~T−18 s (relative to end of recording). As the engines wound down, AC generators went offline and the FDR lost power. The aircraft continued in an uncontrolled dive for ~10 more minutes before terrain impact. CVR captured the full sequence but is not in this release.
-  </p>
-  <p style="margin-top:6px;padding:7px 12px;background:#e8f4fd;border-left:3px solid #2196f3;border-radius:4px;font-size:0.8rem;color:#1a3a4a;max-width:900px">
-    <strong>Lines are forward-filled between real sample points.</strong>
-    Parameters are recorded at their native FDR rate (16 Hz down to 0.25 Hz depending on the parameter — see <a href="observables.md" style="color:#1565c0">observables.md</a>) and resampled to a 16 Hz grid by step-holding the last known value. A flat line between two points means <em>no new data was received</em>, not that the value was constant. Enable point markers (checkbox below) to see where actual samples occur.
-  </p>
+  <!-- Collapsible notices -->
+  <div id="noticesWrap" style="max-width:900px;margin-top:6px">
+    <div id="noticesBody">
+      <div style="padding:7px 12px;background:#fff3e0;border-left:3px solid #e65100;border-radius:4px;font-size:0.88rem;color:#5d3200;margin-bottom:5px">
+        <strong>FDR only — recording ends ~10 min before impact.</strong>
+        Both engine fuel cutoff switches were moved to CUTOFF at ~T−18 s (relative to end of recording). As the engines wound down, AC generators went offline and the FDR lost power. The aircraft continued in an uncontrolled dive for ~10 more minutes before terrain impact. CVR captured the full sequence but is not in this release.
+      </div>
+      <div style="padding:7px 12px;background:#e8f4fd;border-left:3px solid #2196f3;border-radius:4px;font-size:0.84rem;color:#1a3a4a;margin-bottom:5px">
+        <strong>Lines are forward-filled between real sample points.</strong>
+        Parameters are recorded at their native FDR rate (16 Hz down to 0.25 Hz — see <a href="observables.md" style="color:#1565c0">observables.md</a>) and resampled to a 16 Hz grid by step-holding the last known value. A flat line between two points means <em>no new data was received</em>, not that the value was constant. Enable point markers (checkbox below) to see where actual samples occur.
+      </div>
+      <div style="padding:7px 12px;background:#f3f0fa;border-left:3px solid #8e44ad;border-radius:4px;font-size:0.84rem;color:#3b1f5e">
+        <strong>Periodic spikes/drops persist even with "Filter invalid words" on.</strong>
+        ARINC bus invalid words occur on an ~8s cadence but are <em>not synchronous</em> across parameters — each has its own phase offset within the FDR frame. Filtered gaps in one series do not align with gaps in another, causing brief apparent excursions between correlated parameters. These are recorder artifacts, not real events. The NTSB's own FDR plots exclude them.
+      </div>
+    </div>
+    <button onclick="toggleNotices()" id="noticesToggle"
+      style="margin-top:4px;font-size:0.75rem;color:#6e6e73;background:none;border:none;cursor:pointer;padding:2px 0;text-decoration:underline;text-underline-offset:2px">
+      ▲ Hide notes
+    </button>
+  </div>
 </div>
 
 <div class="layout">
 
+<div class="sidebar-wrap">
+<button id="sidebarToggle" onclick="toggleSidebar()" title="Collapse/expand panel">&#8249;</button>
 <div class="sidebar">
+<div class="sidebar-inner">
   <div id="loadStatus" class="loading">Loading data…</div>
+  <div style="margin-top:4px;margin-bottom:10px;font-size:0.75rem;color:#9e9ea0;text-align:center">Data embedded · <a href="#" onclick="document.getElementById('csvIn').click();return false" style="color:#007aff">Load different CSV</a><input type="file" id="csvIn" accept=".csv" style="display:none"></div>
   <h2>Preset Views</h2>
   <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
-    <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pEngine()">Engine &amp; Fuel Cutoff</button>
-    <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pFlight()">Flight Path (Pitch/Roll/Alt)</button>
-    <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pAttRates()">Attitude Rates</button>
-    <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pAccel()">Acceleration (g-loads)</button>
-    <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pDualInput()">Dual Input (Capt vs F/O)</button>
-    <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pControls()">Flight Controls</button>
-    <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pHyd()">Hydraulics</button>
-    <button class="btn-sec" style="text-align:left;font-size:0.8rem;padding:6px 10px" onclick="pAirData()">Air Data (Speed/Mach)</button>
+    <button class="btn-sec" style="text-align:left;padding:6px 10px;font-size:0.9rem" onclick="pEngine()">Engine &amp; Fuel Cutoff</button>
+    <button class="btn-sec" style="text-align:left;padding:6px 10px;font-size:0.9rem" onclick="pFlight()">Flight Path (Pitch/Roll/Alt)</button>
+    <button class="btn-sec" style="text-align:left;padding:6px 10px;font-size:0.9rem" onclick="pAttRates()">Attitude Rates</button>
+    <button class="btn-sec" style="text-align:left;padding:6px 10px;font-size:0.9rem" onclick="pAccel()">Acceleration (g-loads)</button>
+    <button class="btn-sec" style="text-align:left;padding:6px 10px;font-size:0.9rem" onclick="pDualInput()">Dual Input (Capt vs F/O)</button>
+    <button class="btn-sec" style="text-align:left;padding:6px 10px;font-size:0.9rem" onclick="pControls()">Flight Controls</button>
+    <button class="btn-sec" style="text-align:left;padding:6px 10px;font-size:0.9rem" onclick="pHyd()">Hydraulics</button>
+    <button class="btn-sec" style="text-align:left;padding:6px 10px;font-size:0.9rem" onclick="pAirData()">Air Data (Speed/Mach)</button>
   </div>
   <hr style="margin:12px 0;border:none;border-top:1px solid #e8e8ed">
-  <h2>Parameters</h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <h2 style="margin-bottom:0">Parameters</h2>
+    <button onclick="clr();draw1();drawStacked();" style="font-size:0.72rem;padding:2px 8px;border:1px solid #d0d0d5;border-radius:5px;background:#fff;color:#ff3b30;cursor:pointer;font-weight:500" title="Clear all selected parameters">Clear</button>
+  </div>
   <div id="paramGroups"><p style="font-size:0.8rem;color:#9e9ea0">Loading…</p></div>
-  <div style="margin-top:12px;font-size:0.75rem;color:#9e9ea0;text-align:center">Data embedded · <a href="#" onclick="document.getElementById('csvIn').click();return false" style="color:#007aff">Load different CSV</a><input type="file" id="csvIn" accept=".csv" style="display:none"></div>
+
+</div>
+</div>
 </div>
 
 <div class="main-area">
@@ -86,9 +138,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <button class="btn-pri" onclick="resetZoom()">Reset Zoom</button>
     <button id="btnMode" class="btn-pri" onclick="toggleMode()" style="min-width:90px">⬚ Select</button>
     <button class="btn-sec" onclick="expPNG()">Export PNG</button>
-    <label class="sentinel-toggle" title="ARINC bus max-word sentinel values are invalid recorder outputs (not real data). Disable to see raw values.">
+    <label class="sentinel-toggle" title="Filter ARINC bus max-word invalid words (not real data). Chip U2 dropout gaps are always suppressed. Disable to see raw values including invalid words.">
       <input type="checkbox" id="chkSentinel" checked onchange="onSentinelToggle()">
-      Filter invalid words (sentinels)
+      Filter invalid words
     </label>
     <label class="sentinel-toggle" title="Show a dot at each real FDR sample point. Gaps between dots are forward-filled (no new data).">
       <input type="checkbox" id="chkPoints" onchange="onPointsToggle()">
@@ -97,6 +149,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <span id="info"></span>
   </div>
   <div class="chart-wrap"><canvas id="ch1"></canvas></div>
+  <div id="stackedArea" style="display:none;margin-top:16px">
+    <div style="font-size:0.85rem;font-weight:600;color:#6e6e73;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Stacked view — individual Y scales</div>
+    <div id="stackedCharts" style="display:flex;flex-direction:column;gap:6px"></div>
+  </div>
 </div>
 
 </div>
@@ -112,9 +168,9 @@ let sel = [];
 let c1 = null;
 let TX = [];
 
-// ── Sentinel filtering toggle ─────────────────────────────────────────────
-// When true, known invalid ARINC bus words are masked to null before plotting.
-// When false, raw values pass through (useful to see sentinel patterns).
+// ── Invalid word filtering toggle ────────────────────────────────────────
+// When true, known ARINC bus invalid words are masked to null before plotting.
+// When false, raw values pass through (useful to see invalid word patterns).
 let filterSentinels = true;
 function onSentinelToggle() {
   filterSentinels = document.getElementById('chkSentinel').checked;
@@ -177,14 +233,15 @@ function loaded(rows) {
 
   buildColSentinels();
   buildSampleRates();
+  buildGapMask();
   buildUI();
   pEngine();
 }
 
-// ── Sentinel detection ────────────────────────────────────────────────────
-// Global: known ARINC/BCD max-word values. These are fixed constants the FDR
-// bus outputs when a parameter word has not updated or is otherwise invalid.
-// Added 511.0/511.5/511.75 = 9-bit max (airspeed word saturation).
+// ── Invalid word detection ─────────────────────────────────────────────────
+// Global: known ARINC/BCD max-word "invalid word" values. These are fixed constants
+// the aircraft bus outputs when a parameter word has not been refreshed or is invalid.
+// The NTSB report excludes these from their FDR plots. See data.md for full explanation.
 const SENTINELS = new Set([
   127.0, 127.5, 127.75, 127.875, 127.88, 128.0,
   255.0,
@@ -195,9 +252,8 @@ const SENTINELS = new Set([
   65520.0, 65535.0
 ]);
 
-// Per-column explicit overrides for values that are invalid in one column but
-// valid in others (cannot go in the global set).
-// Key = substring of parameter name, value = Set of invalid values for that param.
+// Per-column overrides: values invalid for one parameter but valid in others.
+// Key = substring of parameter name, value = Set of invalid words for that param.
 const COL_OVERRIDES = new Map([
   ['Altitude Press',  new Set([-1.0, 0.0])],
   ['Airspeed Comp',   new Set([0.0])],
@@ -206,10 +262,10 @@ const COL_OVERRIDES = new Map([
   ['Accel Vert',      new Set([5.9996])],
   ['Ground Spd',      new Set([0.0])],
   ['Groundspeed',     new Set([0.0])],
-  ['Hydraulic Oil Pressure Standby', new Set([32589.0, 36770.0])],  // unit mismatch — values are out of PSI range
+  ['Hydraulic Oil Pressure Standby', new Set([32589.0, 36770.0])],  // unit mismatch — raw values far outside PSI range
 ]);
 
-// Per-column statistical sentinels, built at load time.
+// Per-column statistical invalid words, built at load time.
 // Catches remaining column-specific outlier values (>3σ from median, ≥8 occurrences).
 let COL_SENTINELS = [];
 
@@ -217,7 +273,7 @@ function buildColSentinels() {
   COL_SENTINELS = [];
   for (let col = 1; col < PN.length; col++) {
     if (ENC_MAP[col]) continue;
-    // Gather valid raw floats (excluding global sentinels)
+    // Gather valid raw floats (excluding known invalid words)
     let vals = [];
     for (let row of D) {
       if (col >= row.length || row[col] === '') continue;
@@ -257,6 +313,30 @@ function buildSampleRates() {
   }
 }
 
+// ── Gap mask: detect U2 chip dropout intervals ───────────────────────────
+// The FDR data stream is striped across 6 chips. Chip U2 was unreadable.
+// This creates periodic ~1.3s dropouts every ~6.5s (per NTSB report §2.2).
+// We detect these by finding rows where ALL continuous params are missing,
+// and mark them as gap rows. In getVals() we null-out gap rows to break the line.
+let GAP_ROWS = new Uint8Array(0); // 1 = gap row
+const GAP_CONTINUOUS_THRESH = 0.85; // if ≥85% of continuous cols are empty → gap
+
+function buildGapMask() {
+  let contCols = [];
+  for (let c = 1; c < PN.length; c++) {
+    if (!ENC_MAP[c]) contCols.push(c); // continuous only
+  }
+  GAP_ROWS = new Uint8Array(D.length);
+  if (!contCols.length) return;
+  for (let i = 0; i < D.length; i++) {
+    let row = D[i], empty = 0;
+    for (let c of contCols) {
+      if (c >= row.length || row[c] === null || row[c] === undefined || String(row[c]).trim() === '') empty++;
+    }
+    GAP_ROWS[i] = (empty / contCols.length >= GAP_CONTINUOUS_THRESH) ? 1 : 0;
+  }
+}
+
 // ── toNum: convert raw cell → number or null ──────────────────────────────
 function toNum(raw, idx) {
   if (raw === null || raw === undefined || raw === '') return null;
@@ -278,14 +358,31 @@ function toNum(raw, idx) {
 }
 
 // ── getVals: extract + forward-fill for one column ───────────────────────
+// Gap rows (chip U2 dropouts) are always returned as null to break the line.
 function getVals(idx, fill) {
   let out = new Array(D.length), last = null;
   for (let i = 0; i < D.length; i++) {
+    if (GAP_ROWS[i]) { out[i] = null; continue; } // chip dropout — break line
     let v = toNum(D[i][idx], idx);
     if (v !== null) { last = v; out[i] = v; }
     else out[i] = fill ? last : null;
   }
   return out;
+}
+
+// ── Group button label ──────────────────────────────────────────────────────
+function updateGroupBtn(btn, selectedCount) {
+  let g = btn.dataset.group, total = btn.dataset.total;
+  btn.textContent = g + ' (' + selectedCount + '/' + total + ')';
+}
+function refreshGroupCounts() {
+  document.querySelectorAll('.param-group-btn').forEach(btn => {
+    let g = btn.dataset.group;
+    if (!g) return;
+    let list = btn.nextSibling;
+    let selCount = list ? list.querySelectorAll('.param-item.sel').length : 0;
+    updateGroupBtn(btn, selCount);
+  });
 }
 
 // ── UI builder ────────────────────────────────────────────────────────────
@@ -326,7 +423,9 @@ function buildUI() {
     if (!grp[g] || !grp[g].length) continue;
     let d = document.createElement('div'); d.className = 'param-group';
     let btn = document.createElement('button'); btn.className = 'param-group-btn';
-    btn.textContent = g + ' (' + grp[g].length + ')';
+    btn.dataset.group = g;
+    btn.dataset.total = grp[g].length;
+    updateGroupBtn(btn, 0);
     btn.onclick = function() { this.nextSibling.classList.toggle('open'); };
     let l = document.createElement('div'); l.className = 'param-list';
     for (let i of grp[g]) {
@@ -337,7 +436,10 @@ function buildUI() {
         let idx = parseInt(this.dataset.idx);
         if (sel.includes(idx)) { sel = sel.filter(x=>x!==idx); this.classList.remove('sel'); }
         else { sel.push(idx); this.classList.add('sel'); }
+        refreshGroupCounts();
+        setTitle('Your Selection');
         draw1();
+        drawStacked();
       };
       l.appendChild(it);
     }
@@ -352,7 +454,19 @@ function fi(nm) {
   for (let i=1;i<PN.length;i++) if (PN[i].toLowerCase().includes(nl)) return i;
   return -1;
 }
-function clr() { document.querySelectorAll('.param-item.sel').forEach(e=>e.classList.remove('sel')); sel=[]; }
+function toggleNotices() {
+  let body = document.getElementById('noticesBody');
+  let btn  = document.getElementById('noticesToggle');
+  let collapsed = body.style.display === 'none';
+  body.style.display = collapsed ? '' : 'none';
+  btn.textContent = collapsed ? '▲ Hide notes' : '▼ Show notes';
+}
+
+function toggleSidebar() {
+  document.querySelector('.layout').classList.toggle('collapsed');
+}
+
+function clr() { document.querySelectorAll('.param-item.sel').forEach(e=>e.classList.remove('sel')); sel=[]; refreshGroupCounts(); }
 function setTitle(t) { document.getElementById('chartTitle').textContent = t; }
 function selectParams(names) {
   names.forEach(t => {
@@ -360,6 +474,7 @@ function selectParams(names) {
     sel.push(i);
     let e=document.querySelector('.param-item[data-idx="'+i+'"]'); if (e) e.classList.add('sel');
   });
+  refreshGroupCounts();
 }
 
 // ── Preset views ──────────────────────────────────────────────────────────
@@ -374,6 +489,100 @@ function pAirData()   { clr(); setTitle('Air Data (Speed/Mach)');        selectP
 
 // ── Chart rendering ───────────────────────────────────────────────────────
 const COLS = ['#007aff','#ff9500','#34c759','#ff3b30','#af52de','#ff2d55','#5856d6','#00c7be'];
+
+// ── Stacked subcharts (one per selected param, own Y scale) ─────────────────
+let stackedCharts = [];
+function drawStacked() {
+  // Destroy old
+  for (let sc of stackedCharts) { try { sc.destroy(); } catch(e){} }
+  stackedCharts = [];
+  let area = document.getElementById('stackedArea');
+  let container = document.getElementById('stackedCharts');
+  container.innerHTML = '';
+  if (!sel.length) { area.style.display = 'none'; return; }
+  area.style.display = 'block';
+
+  let xMin = defaultXMin;
+  let xMax = 0;
+
+  for (let k = 0; k < sel.length; k++) {
+    let idx = sel[k];
+    let nm  = PN[idx] || ('p'+idx);
+    let u   = (PU[idx] && PU[idx]!=='') ? ' ['+PU[idx]+']' : '';
+    let vals = getVals(idx, true);
+    let col  = COLS[k % COLS.length];
+
+    // Wrapper
+    let wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;width:100%;height:120px';
+    let lbl = document.createElement('div');
+    lbl.style.cssText = 'position:absolute;top:2px;left:4px;font-size:0.78rem;font-weight:600;color:' + col + ';z-index:1;pointer-events:none;background:rgba(255,255,255,0.8);padding:0 3px;border-radius:3px';
+    lbl.textContent = nm + u;
+    let cvs = document.createElement('canvas');
+    wrap.appendChild(lbl);
+    wrap.appendChild(cvs);
+    container.appendChild(wrap);
+
+    // Per-point radius
+    let hz = SAMPLE_HZ[idx] || 1;
+    let ptRadius = showPoints ? (hz >= 8 ? 1.5 : hz >= 2 ? 2.0 : 3.0) : 0;
+    let ptRadiusArr = showPoints ? D.map((row) => {
+      let raw = (idx < row.length) ? row[idx] : '';
+      return (raw !== null && raw !== undefined && String(raw).trim() !== '') ? ptRadius : 0;
+    }) : 0;
+
+    let sc = new Chart(cvs, {
+      type: 'line',
+      data: { datasets: [{
+        label: nm + u,
+        data: TX.map((t, i) => ({ x: t, y: vals[i] })),
+        borderColor: col,
+        backgroundColor: col,
+        borderWidth: 1.2,
+        pointRadius: ptRadiusArr,
+        pointHitRadius: 4,
+        tension: 0,
+        spanGaps: true,
+        stepped: ENC_MAP[idx] ? 'before' : false
+      }]},
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { title: items => {
+            let t = TX[items[0].dataIndex];
+            return t <= 0 ? t.toFixed(2) + 's' : 'T+' + t.toFixed(2) + 's';
+          }}},
+          zoom: {
+            pan: { enabled: false, mode: 'x', modifierKey: 'shift',
+              onPanComplete: ({ chart }) => { syncXAxis(chart.scales.x.min, chart.scales.x.max, chart); }
+            },
+            zoom: {
+              drag: { enabled: true, backgroundColor: 'rgba(0,122,255,0.1)', borderColor: col, borderWidth: 1 },
+              wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x',
+              onZoomComplete: ({ chart }) => { syncXAxis(chart.scales.x.min, chart.scales.x.max, chart); }
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear', min: xMin, max: xMax,
+            ticks: { maxTicksLimit: 8, font: { size: 11 }, callback: v => v.toFixed(0) },
+            title: { display: k === sel.length - 1, text: 'Seconds before FDR cutoff (T=0)', font: { size: 11 } }
+          },
+          y: {
+            type: 'linear', position: 'left', beginAtZero: false,
+            ticks: { maxTicksLimit: 4, font: { size: 11 } },
+            title: { display: false }
+          }
+        }
+      }
+    });
+    stackedCharts.push(sc);
+  }
+}
 
 function makeDatasets(indices) {
   return indices.map((idx, k) => {
@@ -436,6 +645,23 @@ function toggleMode() {
   }
 }
 
+// ── X-axis sync across all charts ────────────────────────────────────────
+function syncXAxis(xMin, xMax, source) {
+  // Sync main chart
+  if (c1 && c1 !== source) {
+    c1.options.scales.x.min = xMin;
+    c1.options.scales.x.max = xMax;
+    c1.update('none');
+  }
+  // Sync all stacked charts
+  for (let sc of stackedCharts) {
+    if (sc === source) continue;
+    sc.options.scales.x.min = xMin;
+    sc.options.scales.x.max = xMax;
+    sc.update('none');
+  }
+}
+
 function zoomOpts() {
   return {
     pan: { enabled: false, mode: 'x', modifierKey: 'shift' },
@@ -443,7 +669,15 @@ function zoomOpts() {
       drag: { enabled: true, backgroundColor: 'rgba(0,122,255,0.15)', borderColor: '#007aff', borderWidth: 1 },
       wheel: { enabled: true },
       pinch: { enabled: true },
-      mode: 'x'
+      mode: 'x',
+      onZoomComplete: ({ chart }) => {
+        syncXAxis(chart.scales.x.min, chart.scales.x.max, chart);
+      }
+    },
+    pan: { enabled: false, mode: 'x', modifierKey: 'shift',
+      onPanComplete: ({ chart }) => {
+        syncXAxis(chart.scales.x.min, chart.scales.x.max, chart);
+      }
     }
   };
 }
@@ -477,9 +711,10 @@ function chartOpts(xMin) {
 
 function draw1(xMin) {
   if (c1) { c1.destroy(); c1 = null; }
-  if (!sel.length) return;
+  if (!sel.length) { document.getElementById('stackedArea').style.display='none'; return; }
   defaultXMin = (xMin !== undefined) ? xMin : Math.max(TX[0], -60);
   c1 = new Chart(document.getElementById('ch1'), { type: 'line', data: { datasets: makeDatasets(sel) }, options: chartOpts(xMin) });
+  drawStacked();
 }
 
 function resetZoom() {
@@ -487,6 +722,7 @@ function resetZoom() {
   c1.options.scales.x.min = defaultXMin;
   c1.options.scales.x.max = 0;
   c1.update('none');
+  syncXAxis(defaultXMin, 0, c1);
 }
 function resetZoomFull() {
   if (!c1) return;
