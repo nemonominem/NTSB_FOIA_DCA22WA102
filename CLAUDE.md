@@ -129,3 +129,63 @@ Use these terms consistently across all files:
 - **Fuel cutoff**: both `Eng1 Cutoff SW` and `Eng2 Cutoff SW` moved from RUN → CUTOFF at cruise altitude (~29,000 ft). This is the primary FDR finding.
 - **N1 display lag**: apparent ~1–2s flat line in N1 after cutoff is a forward-fill display artifact, not a real delay. N1 decay begins immediately; the 1 Hz sampling means the next valid post-cutoff sample arrives up to ~2.6s later.
 - **Roll wrap**: `Roll Angle` spans ±180°. A jump from ~+175° to ~−175° around T=−11s is a valid coordinate wrap (aircraft near-inverted), not a data error.
+
+---
+
+## Python Figure Lessons — Correct Display of FDR Data
+
+### Forward-fill before plotting continuous lines
+
+The `TableResolution.csv` is a 16 Hz grid but parameters are recorded at native rates (1–4 Hz). Most rows are NaN for any given parameter — typically 75% empty. **Plotting without forward-filling produces an invisible or near-invisible line** because matplotlib only connects the sparse non-null points with no fill between them.
+
+**Rule**: always forward-fill (step-hold) before plotting any parameter as a continuous line. Use raw (no fill) only for dot/scatter plots of native samples.
+
+```python
+def get_num_filled(col, bad=None):
+    raw = pd.to_numeric(df[col][mask], errors='coerce').values.copy().astype(float)
+    if bad:
+        for b in bad: raw[raw == b] = np.nan
+    last = np.nan
+    for i in range(len(raw)):
+        if not np.isnan(raw[i]): last = raw[i]
+        elif not np.isnan(last): raw[i] = last
+    return raw
+```
+
+### Y-axis range must match actual data range
+
+If the axis range is set much wider than the data (e.g. 0–32,000 ft for altitude that only spans 25,000–29,000 ft), the line appears as a thin band and is effectively invisible. Always set y-limits from the data:
+
+```python
+av = alt[~np.isnan(alt)]
+ax.set_ylim(av.min() - 800, av.max() + 800)
+```
+
+### Shared y-axis hides data when ranges differ by orders of magnitude
+
+Plotting pitch (−36° to +2.5°) and roll (−177° to +176°) on the same axes causes pitch to appear as a flat hairline near zero. **Use separate sub-panels** for parameters whose ranges differ significantly — one panel per parameter is always safer than twinx for attitude data.
+
+### Invalid sentinel values for this dataset
+
+Key sentinels to mask before plotting:
+
+| Parameter | Invalid value | Reason |
+|---|---|---|
+| `Altitude Press` | −1.0, 0.0 | ARINC invalid / chip dropout |
+| `Airspeed Comp` | 511.75 | 10-bit max (1023.5) scaled by 0.5 |
+| `Eng1/2 N1` | 127.88, 127.875 | 7-bit max ARINC word |
+| `Eng1/2 Fuel Flow` | 16368.0 | 14-bit near-max fuel flow word |
+| `Pitch/Roll Angle` | −0.18 (in cruise only) | ARINC invalid word — use run-length filter, not global mask (value is legitimate during dive) |
+
+### Dark theme colours that are visible against `#161b22` background
+
+| Use | Colour |
+|---|---|
+| Blue series | `#58a6ff` |
+| Orange series | `#ffa657` |
+| Green series | `#56d364` |
+| Purple series | `#d2a8ff` |
+| Amber/accel | `#e3b341` |
+| Grid lines | `#30363d` |
+| Text | `#c9d1d9` |
+| Cutoff line | `#ff6b6b` |
