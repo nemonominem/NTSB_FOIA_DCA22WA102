@@ -521,7 +521,7 @@ The CVR captured all of this but was provided exclusively to the CAAC and is not
 
 ### 8.7 Interactive Explorer — Preset Guide (Last 20 Seconds)
 
-*Use [`EDA_1.html`](EDA_1.html) to explore the FDR data interactively. The presets below are one-click views designed around the key analytical questions. All T times are relative to T=0 = FDR power loss (~26,000 ft, approximately 10 minutes before terrain impact).*
+*Use [`EDA_1.html`](https://nemonominem.github.io/NTSB_FOIA_DCA22WA102/EDA_1.html) to explore the FDR data interactively. The presets below are one-click views designed around the key analytical questions. All T times are relative to T=0 = FDR power loss (~26,000 ft, approximately 10 minutes before terrain impact).*
 
 ---
 

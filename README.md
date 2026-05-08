@@ -43,9 +43,9 @@ A self-contained interactive explorer for the FDR time-series data. The full CSV
 |---|---|
 | [`data.md`](data.md) | What are FDRs and CVRs? What data is in each file? How to read the CSVs. Start here. |
 | [`analysis.md`](analysis.md) | Detailed analysis of the FOIA documents: the recorder recovery, key FDR findings, the FOIA trigger, and the `.upk` file format. |
-| [`analysis.pdf`](analysis.pdf) | Same as above, converted to a pdf using a generic Python script saved in the repo. |
+| [`analysis.pdf`](https://nemonominem.github.io/NTSB_FOIA_DCA22WA102/analysis.pdf) | Same as above, converted to a pdf using a generic Python script saved in the repo. |
 | [`observables.md`](observables.md) | Full list of ~160 FDR parameters: physical definitions, sample rates, units, discrete vs. continuous classification, and key analysis notes. |
-| [`EDA_1.html`](EDA_1.html) | Self-contained interactive FDR data explorer (CSV embedded). |
+| [`EDA_1.html`](https://nemonominem.github.io/NTSB_FOIA_DCA22WA102/EDA_1.html) | Self-contained interactive FDR data explorer (CSV embedded). |
 
 ---
 
