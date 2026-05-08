@@ -136,8 +136,6 @@ The CAAC opened the CSMU at their facilities in Beijing, removed protective RTV 
 
 A non-linear time drift between the CAM (wideband, 16 kHz) and crew channels (narrowband, 8 kHz) was identified and corrected. Minor packet dropout artefacts were present in the narrowband channels, possibly related to the pre-existing (manufacturing defect) capacitor damage.
 
-<div style="background:#fff3cd;border-left:4px solid #e6a817;border-radius:4px;padding:12px 16px;margin:12px 0">
-
 > ⚠️ **NTSB claims it retained no copy of the CVR audio — a claim that is technically implausible given the recovery workflow.**
 >
 > The NTSB's own report states it *"did not retain any of the files provided to the CAAC delegation other than the photographs, scans, and microscopic images."* This has been separately confirmed in press reporting (CNN, May 2026): US investigators extracted all four channels at Excellent quality and provided the audio to CAAC, stating they kept no copy of the audio files.
@@ -154,8 +152,6 @@ A non-linear time drift between the CAM (wideband, 16 kHz) and crew channels (na
 > Each of these steps produces at least one intermediate file on NTSB equipment. A forensic audio extraction of this complexity, conducted over multiple days at the NTSB lab, does not produce a single output file with no traces. The assertion that zero copies were retained — not even a working backup, a QC copy, or a verification file — is technically extraordinary.
 >
 > Whether this reflects a deliberate policy decision, a legal interpretation of ICAO Annex 13 obligations, or an incomplete description of what was retained, the practical effect is the same: **the only recorder that captured the full final sequence of MU5735 is now held exclusively by the government of China, with no independently verifiable copy.**
-
-</div>
 
 ---
 
@@ -203,7 +199,9 @@ From the FDR Combined Download Report (page 22, lines 627–630):
 
 > *"...looking for the reason that the engine N2 dropped below the generator cutoff speed, it was found that while **cruising at 29,000 ft**, the **fuel switches on both engines moved from the run position to the cutoff position**. Engine speeds decreased after the fuel switch movement."*
 
-The FDR plots (Figures 11–13 in the report, covering the final 90 seconds of recording) show:
+*(N1 = fan speed, the primary measure of thrust; N2 = core compressor speed, which drives the electrical generators. When N2 drops below a threshold — typically around 56% — the generators drop offline and all AC-powered systems, including the FDR, lose power.)*
+
+The FDR plots (Figures 11–13 in the report, covering the final 90 seconds of *recorded* data as a display window — not 90 seconds of dive; the actual event from cutoff to FDR power loss is only ~19 seconds) show:
 
 - **Figure 11 (Basic aircraft parameters)**: Altitude Press., Airspeed Comp., Lateral/Longitudinal/Vertical Acceleration, Pitch Angle, Roll Angle, Engine 1 & 2 Cutoff Switch positions
 - **Figure 12 (Flight control positions)**: Elevator L & R, Control Column L & R, Control Wheel L & R positions, Altitude, Airspeed
@@ -220,6 +218,22 @@ All four audio channels were recovered at Excellent quality. The CVR content (th
 The FDR's finding of **both fuel cutoff switches moving to the CUTOFF position at cruise altitude** — with no preceding technical malfunction recorded — is the central factual finding of the recorder data. This finding, taken together with the CVR audio (withheld from public release), forms the core of the investigation into whether the event was deliberate.
 
 The CAAC investigation was still open and had not published a final report as of March 2024 (two years post-accident), which was the direct trigger for this FOIA release.
+
+The preliminary conclusion that the aircraft "did what it was told to do by someone in the cockpit" was first reported by *The Wall Street Journal* (Andrew Tangel and Micah Maidenberg, May 17, 2022) based on people familiar with U.S. officials' early assessment of the FDR data — more than two years before the FOIA release.
+
+### Crew
+
+Three pilots were on the flight deck, as reported by *The Times* (Charles Bremner, May 3, 2026):
+
+| Seat | Name | Age | Flight hours | Notes |
+|---|---|---|---|---|
+| Captain | Yang Hongda | 32 | ~6,700 | Pilot in command |
+| First Officer | Zhang Zhengping | 59 | ~32,000+ | Recently demoted from captain rank |
+| Second Officer | Ni Gongtao | 27 | — | Trainee / observer |
+
+Zhang Zhengping held one of China's highest individual flight-hour tallies but had recently been demoted from captain. According to *The Wall Street Journal* (Rachel Liang and Chun Han Wong, March 21, 2024), CAAC's investigation through to 2024 found "no irregularities" with the crew's technical qualifications and health. Investigative speculation reported by *The Times* has centred on Zhang.
+
+Note: the FDR does not record which crew member was at the controls. The CVR audio (not released) would be the primary source for determining individual pilot actions during the event sequence.
 
 ---
 
@@ -340,7 +354,7 @@ N1 at the moment of cutoff was ~83.5% (normal cruise thrust). The decay is rapid
 
 By T=−18s N1 had already dropped to ~48%, the aircraft had begun rolling left. Roll rate was extremely rapid: from +0.2° to −154.5° in under 8 seconds (~20°/s average, peaking higher). By T=−8.8s the roll angle had passed through −180° and was reading positive again (past vertical).
 
-**The FDR stopped recording at ~26,000 ft with the aircraft in a steep nose-down (~−36° pitch), near-inverted attitude (~−168° roll).**
+**The FDR stopped recording at ~26,000 ft with the aircraft in a steep nose-down (~−36° pitch), near-inverted attitude (~−168° roll).** "Near-inverted" means the aircraft had rolled almost completely onto its back — at exactly −180° it would be perfectly upside-down; at −168° it was within 12° of that, with the cabin ceiling pointing toward the ground and the wings swept overhead.
 
 ---
 
@@ -359,7 +373,7 @@ From T=−778s to T=−20s, pitch was a rock-steady +2.46° and roll was +0.18°
 ![FIG 3 — Column Force and Position: Captain vs F/O (last 60 s)](support/figures/fig3_dual_input.png)
 
 The FDR records column force independently for each seat:
-- `Ctrl Col Force Pitch CWS Local` — Captain's column (left seat)
+- `Ctrl Col Force Pitch CWS Local` — Captain's column (left seat); CWS = Control Wheel Steering, a force-sensing mode where the autopilot responds to pilot force on the controls
 - `Ctrl Col Force Pitch CWS Foreign` — First Officer's column (right seat)
 - Sign convention: **negative = column pushed forward (nose down)**
 
@@ -396,9 +410,62 @@ The roll angle discontinuity in FIG 4 at approximately T=−11s is a ±180° wra
 
 ---
 
+### 8.3.2 Roll Axis — Control Wheel Data (NYT "Struggle" Hypothesis)
+
+The New York Times article (James Glanz, May 7 2026) quotes former NTSB/FAA investigator Jeff Guzzetti interpreting the erratic control wheel movement as evidence of a struggle between the two pilots:
+
+> *"Here the control wheel is going back and forth and back and forth. That kind of indicates to me that there was a struggle."*
+
+![FIG 7 — Control Wheel Position and Roll Axis (last 40 s)](support/figures/fig7_control_wheel.png)
+
+The FDR records three roll-axis parameters:
+
+- `Ctrl Whl Pos-L` — Captain's control wheel position (deg)
+- `Ctrl Whl Pos-R` — First Officer's control wheel position (deg)
+- `Ctrl Whl Force Roll CWS` — Single control wheel force sensor (lb)
+
+**Before cutoff (T=−40s to T=−1s):**
+Both wheel positions are small and nearly identical (~+0.35° to +3.5°, noise/bias level). Force reads near zero (−0.04 to −0.46 lb). The aircraft roll angle is stable at +0.18°–+0.35°. No meaningful roll input is recorded.
+
+**After cutoff (T=−1s onward) — erratic oscillations confirmed:**
+
+| Time (s) | Whl Pos-L (°) | Whl Pos-R (°) | Δ(L−R) | Roll Angle (°) |
+|---|---|---|---|---|
+| T=−1.0 | +3.16 | +3.16 | 0.00 | +0.35 |
+| T=0.0 | −52.0 | −52.0 | 0.00 | −3.0 |
+| T=+1.0 | −55.9 | −55.9 | 0.00 | −21.3 |
+| T=+2.0 | −99.1 | −99.5 | −0.35 | −50.8 |
+| T=+3.0 | −67.2 | −68.2 | −1.05 | −88.2 |
+| T=+4.0 | −46.8 | −47.1 | −0.35 | −123.1 |
+| T=+5.0 | −41.8 | −43.2 | −1.40 | −154.5 |
+| T=+6.0 | −99.1 | −99.5 | −0.35 | +126.2 |
+| T=+7.0 | −57.3 | −58.4 | −1.05 | +80.3 |
+| T=+8.0 | −42.9 | −43.6 | −0.70 | +42.0 |
+| T=+9.0 | −71.7 | −75.2 | −3.52 | +11.8 |
+| T=+10.0 | −99.1 | −99.5 | −0.35 | −17.1 |
+| T=+11.0 | −46.1 | −46.4 | −0.35 | −61.4 |
+| T=+12.0 | −29.5 | −31.3 | −1.76 | −163.0 |
+
+**Assessment:**
+
+The erratic large-amplitude oscillations (±99° peak) cited by Guzzetti are confirmed in the data. However, the "struggle" interpretation is not supported by the wheel position differential alone:
+
+**Whl-L and Whl-R track each other within 0–3.5° throughout.** On the Boeing 737, the captain's and first officer's control wheels are **mechanically linked via a cable-and-pulley system** — they are physically constrained to move in near-unison. Unlike the pitch column (which has **separate** force sensors for each seat — `Local` and `Foreign`), the roll axis has only **one** force sensor (`Ctrl Whl Force Roll CWS`), shared between both positions.
+
+This means:
+1. The wheel position sensors cannot distinguish one-pilot vs two-pilot roll inputs
+2. The single force sensor cannot be decomposed into Captain vs F/O contributions
+3. A single pilot turning the wheel hard would produce exactly the same Whl-L ≈ Whl-R signature
+
+**Conclusion:** The violent, oscillating roll inputs in the final 12 seconds are confirmed. Whether they were the result of a single pilot, both pilots acting in concert, or a physical struggle cannot be determined from the available FDR parameters. The pitch channel (§8.3) is more informative on this question, and shows convergent, not divergent, inputs.
+
+> **Note on press reporting:** *The Times* (Charles Bremner, May 3, 2026) reported that the FDR showed “a pilot’s yoke pushing the aircraft into a steep dive and efforts by the other pilot to halt the dive” and “two pilots were turning their yokes in opposite directions.” The first claim — one pilot pitching down, the other resisting — is **directly contradicted by the pitch-axis data in §8.3**, which shows both column force sensors moving in the same direction (both negative, increasing together to saturation). The second claim — opposite directions on the roll axis — is neither confirmed nor refuted by the FDR, because the 737’s mechanically coupled wheel system produces Whl-L ≈ Whl-R regardless of which pilot is applying force. Aviation safety consultant John Cox, quoted by *The New York Times* (James Glanz, May 7, 2026), struck a more cautious note: the wheel movement pattern suggested a struggle “but the evidence is not overwhelming or totally conclusive” — which aligns with the analysis above.
+
+---
+
 ### 8.4 Post-Cutoff Fuel-Flow Analysis
 
-After both fuel cutoff switches moved to CUTOFF at T=−19.4s, the FDR records a brief but visible **rise in fuel flow** for both engines around T=−9 to T=−7s — peaking at ~1,056 pph (Eng1) and ~208 pph (Eng2) — before reaching zero by T=−5.75s. This is not a re-ignition event.
+After both fuel cutoff switches moved to CUTOFF at T=−19.4s, the FDR records a brief but visible **rise in fuel flow** for both engines around T=−9 to T=−7s — peaking at ~1,056 pph (pounds per hour) (Eng1) and ~208 pph (Eng2) — before reaching zero by T=−5.75s. This is not a re-ignition event.
 
 ![FIG 6 — Engine cutoff and post-cutoff fuel-flow anomaly (last 60 s)](support/figures/fuel_flow_anomaly.png)
 
@@ -447,5 +514,91 @@ The CVR captured all of this but was provided exclusively to the CAAC and is not
 | Roll onset | Roll began within ~2s of cutoff, reached −90° by T=−15s | Faster than aerodynamic yaw asymmetry alone could explain |
 | Crew inputs (pitch) | Both columns pushed forward, same direction, increasing force to sensor max | No crew conflict; both pilots applying forward column together |
 | Crew inputs (timing) | Forward column inputs began at T=−17.5s, ~2s after cutoff | Crew response was immediate |
-| FDR end state | −35.9° pitch, −167.9° roll, ~26,000 ft, N1~25.6% (windmilling) | Near-inverted, steep dive, engines not producing thrust |
+| FDR end state | −35.9° pitch, −167.9° roll, ~26,000 ft, N1~25.6% (windmilling — fan spinning freely from airflow, not combustion) | Near-inverted, steep dive, engines not producing thrust |
 | Post-cutoff fuel flow | Brief rise to ~1,056 pph (Eng1) at T=−9s despite cutoff valve closed | Inertial fuel movement under extreme negative g and near-inverted attitude; not re-ignition — N1 decays monotonically throughout |
+
+---
+
+### 8.7 Interactive Explorer — Preset Guide (Last 20 Seconds)
+
+*Use [`EDA_1.html`](EDA_1.html) to explore the FDR data interactively. The presets below are one-click views designed around the key analytical questions. All T times are relative to T=0 = FDR power loss (~26,000 ft, approximately 10 minutes before terrain impact).*
+
+---
+
+#### Engine & Fuel Cutoff
+**Parameters:** `Eng1/2 Cutoff SW`, `Eng1/2 N1`, `Eng1/2 N2`
+
+**What to look for in the last 20 s:**
+- Both cutoff switches flip RUN→CUTOFF simultaneously at **T=−19.4s** — single decisive action
+- N1 drops from 83.5% to ~25.6% (windmilling) monotonically — no recovery, no re-ignition
+- Note: the ARINC bus invalid-word cycling (RUN→CUTOFF every ~8s throughout the flight) is an artefact; the real event is the final RUN→CUTOFF with no subsequent return to RUN
+- The FDR loses power when N2 drops below generator cutoff speed — this is why the recording ends at T=0, not at impact
+
+---
+
+#### Flight Path (Pitch / Roll / Alt)
+**Parameters:** `Altitude Press`, `Airspeed Comp`, `Pitch Angle`, `Roll Angle`
+
+**What to look for in the last 20 s:**
+- **T=−25s to T=−20s**: rock-solid cruise at 29,100 ft, pitch +2.5°, roll ≈0° — completely normal
+- **T=−19.4s**: cutoff
+- **T=−17s**: roll begins, pitch starts declining
+- **T=−15s**: roll reaches −90° (wings vertical); pitch −4°
+- **T=−11s**: roll passes −180° → the jump from ~+175° to ~−175° is a **coordinate wrap** (past inverted), not a data error
+- **T=−8s**: airspeed rising rapidly as aircraft accelerates in nose-down dive
+- **T=0**: altitude ~26,000 ft (FDR power loss), pitch −36°, roll ~−168° (near-inverted)
+
+---
+
+#### Attitude Rates
+**Parameters:** `Pitch Angle`, `Roll Angle`, `Roll Rate`, `Yaw Rate`, `Absolute Roll Rate`
+
+**What to look for in the last 20 s:**
+- Roll rate peaks within 2–3 seconds of cutoff — the rapidity (reaching ~20°/s average, faster instantaneously) is inconsistent with aerodynamic yaw-asymmetry from an engine flameout alone at this thrust level
+- Yaw rate is modest relative to roll rate — the motion is primarily a rolling rather than yawing departure
+- Pitch rate is slow initially, accelerating as the dive deepens — the pitch response lags the roll considerably
+
+---
+
+#### Dual Input — Captain vs F/O
+**Parameters:** `Ctrl Col Force Pitch CWS Local` (Captain), `Ctrl Col Force Pitch CWS Foreign` (F/O), `Ctrl Col Force Pitch CWS`
+
+**What to look for in the last 20 s:**
+- **T=−25s to T=−20s**: both channels near zero or within bias band (~±2 lb); no intentional pre-cutoff pitch input
+- **T=−17.5s**: both channels go negative (forward = nose-down) together — the two pilots are aligned, not opposing
+- Force increases progressively through T=0: Local peaks at −83.8 lb, Foreign peaks at −83.8 lb (sensor saturation) — both pushing to the limit simultaneously
+- **No divergence between the two force sensors at any point** — no evidence of a pitch-axis struggle
+- Interpret carefully: at T=−11s the aircraft is near-inverted, so "forward column" changes aerodynamic meaning
+
+---
+
+#### Roll Axis (Control Wheel)
+**Parameters:** `Ctrl Whl Pos-L` (Capt), `Ctrl Whl Pos-R` (F/O), `Ctrl Whl Force Roll CWS`, `Roll Angle`
+
+**What to look for in the last 20 s:**
+- **T=−25s to T=−20s**: both wheels at ~+2–3° (noise/bias), force ≈ 0 — no roll input, wings level
+- **T=−19s onward**: wheel deflections go immediately to −28° (T=−17.5s), then oscillate between −99° and 0° throughout the event
+- **L and R always within ~3° of each other** — they are mechanically coupled on the 737; this does not distinguish one vs two pilots on the roll axis
+- The 0.35° "spikes" back to near-zero (visible at T=−10s, −2.5s, 0s) are ARINC invalid-word artefacts in the chip dropout periods — not real wheel movements
+- **Compare `Ctrl Whl Pos-L` and `Roll Angle` together**: the wheel inputs are large but the roll angle oscillations are even larger, because the aircraft's aerodynamic response at this speed and attitude amplifies inputs
+- The single `Ctrl Whl Force Roll CWS` sensor cannot be decomposed by seat — it provides no information about whether one or both pilots were applying force, or in what direction per seat
+
+---
+
+#### Flight Controls
+**Parameters:** `Ctrl Col Force Pitch CWS Local/Foreign`, `Aileron Roll Cmd-L`, `Ctrl Whl Force Roll CWS`, `Elevator Pitch Cmd-L`
+
+**What to look for in the last 20 s:**
+- Elevator deflection tracks column force directly from T=−17.5s onward — the hydraulic system was functioning normally; inputs were being executed
+- Aileron roll command goes large immediately after cutoff, consistent with the wheel position data
+- The combination of elevator nose-down and aileron commands confirms both axes were actively commanded throughout
+
+---
+
+#### Acceleration (g-loads)
+**Parameters:** `Accel Vert`, `Accel Long`, `Accel Lat`
+
+**What to look for in the last 20 s:**
+- Vertical acceleration goes negative (−1 to −3 g) from T=−17s as the aircraft pitches nose-down
+- The extreme negative g values at T=−9s coincide with the post-cutoff fuel-flow anomaly (see §8.4) — this is the inertial environment driving fuel movement in the lines
+- Lateral acceleration reflects the rolling motion; at near-inverted attitudes the axis mappings become complex
